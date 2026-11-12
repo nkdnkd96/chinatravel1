@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: travel-db
+    restart: always
+    environment:
+      POSTGRES_USER: travel_user
+      POSTGRES_PASSWORD: travel_secret_password_2026
+      POSTGRES_DB: travel_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - travel-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U travel_user -d travel_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: travel-api
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://travel_user:travel_secret_password_2026@db:5432/travel_db
+      PORT: 4000
+    networks:
+      - travel-net
+
+  frontend:
+    build: ./frontend
+    container_name: travel-web
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - travel-net
+
+volumes:
+  pgdata:
+
+networks:
+  travel-net:
+    driver: bridge

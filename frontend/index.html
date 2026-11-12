@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TravelOS - Quản lý Lịch trình & Vé Du lịch</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: { 850: '#151e2e', 900: '#0f172a', 950: '#080d1a' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #080d1a; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    .glass { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row">
+
+  <!-- SIDEBAR: DANH SÁCH CHUYẾN ĐI -->
+  <aside class="w-full md:w-80 glass border-r border-slate-800 p-5 flex flex-col gap-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <i data-lucide="compass" class="w-6 h-6 text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight text-white">TravelOS</h1>
+          <p class="text-xs text-slate-400">Quản lý lịch trình độc lập</p>
+        </div>
+      </div>
+      <button onclick="openTripModal()" class="p-2 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-200 transition" title="Tạo chuyến đi mới">
+        <i data-lucide="plus" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <div>
+      <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Chuyến đi của bạn</p>
+      <div id="tripList" class="space-y-2.5"></div>
+    </div>
+
+    <div class="mt-auto pt-4 border-t border-slate-800/80 text-xs text-slate-400 space-y-1">
+      <div class="flex items-center justify-between">
+        <span>Trạng thái DB:</span>
+        <span class="text-emerald-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> PostgreSQL Connected</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 p-4 md:p-8 overflow-y-auto max-w-6xl mx-auto w-full">
+    
+    <!-- HEADER CHUYẾN ĐI -->
+    <div id="tripHeader" class="glass rounded-2xl p-6 mb-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 text-indigo-400 text-sm font-medium mb-1">
+            <i data-lucide="map-pin" class="w-4 h-4"></i>
+            <span id="currentDestination">Đang tải...</span>
+          </div>
+          <h2 id="currentTripTitle" class="text-2xl md:text-3xl font-bold text-white">...</h2>
+          <p id="currentTripMeta" class="text-sm text-slate-400 mt-1"></p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="bg-slate-900/90 border border-slate-800 px-4 py-2.5 rounded-xl">
+            <span class="text-xs text-slate-400 block">Tổng chi phí dự kiến</span>
+            <span id="currentTotalCost" class="text-lg font-bold text-emerald-400">0 ₫</span>
+          </div>
+          <button onclick="openItemModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-indigo-600/25 transition">
+            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+            <span>Thêm Dịch vụ / Vé</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- THANH BỘ LỌC TÍNH NĂNG (TABS) -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6" id="filterTabs">
+      <button onclick="setFilter('all')" data-tab="all" class="tab-btn bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+        <i data-lucide="calendar-clock" class="w-4 h-4"></i> Master Timeline (Tất cả)
+      </button>
+      <button onclick="setFilter('flight')" data-tab="flight" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+        <i data-lucide="plane" class="w-4 h-4 text-sky-400"></i> Giờ bay & Vé máy bay
+      </button>
+      <button onclick="setFilter('hotel')" data-tab="hotel" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+        <i data-lucide="hotel" class="w-4 h-4 text-amber-400"></i> Khách sạn
+      </button>
+      <button onclick="setFilter('train')" data-tab="train" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+        <i data-lucide="train-front" class="w-4 h-4 text-emerald-400"></i> Vé tàu / Xe
+      </button>
+      <button onclick="setFilter('esim')" data-tab="esim" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+        <i data-lucide="smartphone-nfc" class="w-4 h-4 text-purple-400"></i> Quản lý eSIM
+      </button>
+      <button onclick="setFilter('ticket')" data-tab="ticket" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+        <i data-lucide="ticket" class="w-4 h-4 text-rose-400"></i> Vé tham quan
+      </button>
+    </div>
+
+    <!-- DANH SÁCH LỊCH TRÌNH (TIMELINE THEO NGÀY) -->
+    <div id="timelineContainer" class="space-y-8"></div>
+
+  </main>
+
+  <!-- MODAL THÊM DỊCH DỤ / VÉ -->
+  <div id="itemModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="glass bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-white">Thêm hạng mục vào lịch trình</h3>
+        <button onclick="closeItemModal()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
+      </div>
+      <form id="itemForm" onsubmit="submitItem(event)" class="space-y-4 text-sm">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Loại dịch vụ</label>
+            <select id="f_type" onchange="renderDynamicFields()" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white">
+              <option value="flight">✈️ Chuyến bay (Flight)</option>
+              <option value="hotel">🏨 Khách sạn (Hotel)</option>
+              <option value="train">🚆 Vé tàu / Xe (Train)</option>
+              <option value="esim">📱 eSIM du lịch</option>
+              <option value="ticket">🎟️ Vé tham quan (Attraction)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Mã đặt chỗ (PNR / Booking / ICCID)</label>
+            <input id="f_code" required placeholder="VD: VN123 / PNR: ABCXYZ" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Tên hiển thị (Hãng bay / Tên Khách sạn / Tên Điểm tham quan)</label>
+          <input id="f_title" required placeholder="VD: Vietnam Airlines VN163 / Khách sạn Novotel" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Thời gian bắt đầu (Giờ bay/Check-in)</label>
+            <input type="datetime-local" id="f_start" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Thời gian kết thúc (Hạ cánh/Check-out)</label>
+            <input type="datetime-local" id="f_end" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1" id="lbl_from">Điểm đi / Địa chỉ</label>
+            <input id="f_from" required placeholder="VD: Sân bay Nội Bài (T1 - Gate 4)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1" id="lbl_to">Điểm đến / Loại phòng / Gói cước</label>
+            <input id="f_to" required placeholder="VD: Sân bay Đà Nẵng" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+        </div>
+
+        <!-- Trường thông tin động theo từng loại vé -->
+        <div id="dynamicFields" class="grid grid-cols-2 gap-3 p-3 bg-slate-950/70 rounded-xl border border-slate-800"></div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Người sử dụng</label>
+            <input id="f_assigned" value="Cả gia đình" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Chi phí (VNĐ)</label>
+            <input type="number" id="f_cost" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Trạng thái</label>
+            <select id="f_status" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white">
+              <option value="Đã xuất vé">Đã xuất vé / Đã đặt</option>
+              <option value="Đã thanh toán">Đã thanh toán</option>
+              <option value="Thanh toán sau">Trả tại nơi đến</option>
+              <option value="Đã cài đặt">eSIM: Đã cài đặt</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Đính kèm ảnh Mã QR (eSIM / Vé tàu / Vé tham quan)</label>
+          <input type="file" id="f_qr" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeItemModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Lưu vào lịch trình</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL TẠO CHUYẾN ĐI MỚI -->
+  <div id="tripModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="glass bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6">
+      <h3 class="text-lg font-bold text-white mb-4">Tạo Chuyến Đi Mới</h3>
+      <form onsubmit="submitTrip(event)" class="space-y-3 text-sm">
+        <input id="t_title" required placeholder="Tên chuyến đi (VD: Du lịch Phú Quốc)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+        <input id="t_dest" required placeholder="Điểm đến (VD: Phú Quốc, Kiên Giang)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+        <div class="grid grid-cols-2 gap-2">
+          <input type="date" id="t_start" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          <input type="date" id="t_end" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+        </div>
+        <input id="t_members" placeholder="Thành viên (VD: Gia đình 4 người)" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+        <div class="flex justify-end gap-2 pt-3">
+          <button type="button" onclick="closeTripModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300">Đóng</button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium">Tạo chuyến đi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL XEM NHANH MÃ QR -->
+  <div id="qrModal" onclick="this.classList.add('hidden')" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-sm w-full text-center space-y-3" onclick="event.stopPropagation()">
+      <h4 id="qrModalTitle" class="font-bold text-white">Mã QR / Voucher</h4>
+      <img id="qrModalImg" src="" alt="QR Voucher" class="w-full rounded-xl bg-white p-3 mx-auto max-h-80 object-contain" />
+      <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">Đóng</button>
+    </div>
+  </div>
+
+  <script>
+    let trips = [];
+    let currentTripId = null;
+    let items = [];
+    let currentFilter = 'all';
+
+    const typeConfig = {
+      flight: { icon: 'plane', label: 'Chuyến bay', badge: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
+      hotel:  { icon: 'hotel', label: 'Khách sạn', badge: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+      train:  { icon: 'train-front', label: 'Vé tàu / Xe', badge: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+      esim:   { icon: 'smartphone-nfc', label: 'eSIM', badge: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
+      ticket: { icon: 'ticket', label: 'Vé tham quan', badge: 'bg-rose-500/15 text-rose-400 border-rose-500/30' }
+    };
+
+    async function loadTrips() {
+      const res = await fetch('/api/trips');
+      trips = await res.json();
+      if (trips.length > 0 && !currentTripId) currentTripId = trips[0].id;
+      renderTrips();
+      if (currentTripId) loadItems(currentTripId);
+    }
+
+    function renderTrips() {
+      const list = document.getElementById('tripList');
+      list.innerHTML = trips.map(t => `
+        <div onclick="selectTrip(${t.id})" class="cursor-pointer p-3.5 rounded-xl border transition ${t.id === currentTripId ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/60 border-slate-800/80 text-slate-300 hover:bg-slate-800/60'}">
+          <div class="font-semibold text-sm truncate">${t.title}</div>
+          <div class="text-xs text-slate-400 flex justify-between mt-1">
+            <span>${new Date(t.start_date).toLocaleDateString('vi-VN')}</span>
+            <span>${t.item_count} mục</span>
+          </div>
+        </div>
+      `).join('');
+
+      const active = trips.find(t => t.id === currentTripId);
+      if (active) {
+        document.getElementById('currentDestination').innerText = active.destination;
+        document.getElementById('currentTripTitle').innerText = active.title;
+        document.getElementById('currentTripMeta').innerText = `🗓️ ${new Date(active.start_date).toLocaleDateString('vi-VN')} - ${new Date(active.end_date).toLocaleDateString('vi-VN')}  •  👨‍👩‍👧‍👦 ${active.members || 'Cả đoàn'}`;
+        document.getElementById('currentTotalCost').innerText = Number(active.total_cost || 0).toLocaleString('vi-VN') + ' ₫';
+      }
+      lucide.createIcons();
+    }
+
+    function selectTrip(id) {
+      currentTripId = id;
+      renderTrips();
+      loadItems(id);
+    }
+
+    async function loadItems(tripId) {
+      const res = await fetch(`/api/trips/${tripId}/items`);
+      items = await res.json();
+      renderTimeline();
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.tab === filter) {
+          btn.className = 'tab-btn bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
+        } else {
+          btn.className = 'tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
+        }
+      });
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      const container = document.getElementById('timelineContainer');
+      const filtered = currentFilter === 'all' ? items : items.filter(i => i.item_type === currentFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="glass rounded-2xl p-12 text-center text-slate-400">Chưa có hạng mục nào trong mục này. Bấm "Thêm Dịch vụ / Vé" để bắt đầu!</div>`;
+        return;
+      }
+
+      // Gom nhóm theo ngày
+      const groups = {};
+      filtered.forEach(item => {
+        const dayKey = new Date(item.start_datetime).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+        if (!groups[dayKey]) groups[dayKey] = [];
+        groups[dayKey].push(item);
+      });
+
+      container.innerHTML = Object.entries(groups).map(([day, dayItems]) => `
+        <div class="space-y-3">
+          <div class="sticky top-0 z-10 py-2 bg-slate-950/90 backdrop-blur flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+            <h3 class="font-bold text-sm uppercase tracking-wider text-indigo-400">${day}</h3>
+          </div>
+          <div class="grid gap-3">
+            ${dayItems.map(item => renderCard(item)).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderCard(item) {
+      const cfg = typeConfig[item.item_type] || typeConfig.ticket;
+      const startTime = new Date(item.start_datetime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      const endTime = item.end_datetime ? new Date(item.end_datetime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '';
+      const d = item.details || {};
+      const detailBadges = Object.entries(d).filter(([_,v]) => v).map(([k, v]) => `<span class="px-2.5 py-1 rounded-md bg-slate-800/90 text-slate-300 text-xs">${v}</span>`).join('');
+
+      return `
+        <div class="glass rounded-2xl p-5 hover:border-slate-700 transition flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-start gap-4">
+            <div class="text-center min-w-[64px] pt-1">
+              <span class="text-lg font-bold text-white block">${startTime}</span>
+              ${endTime ? `<span class="text-xs text-slate-400">${endTime}</span>` : ''}
+            </div>
+            <div class="space-y-1.5">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border flex items-center gap-1.5 ${cfg.badge}">
+                  <i data-lucide="${cfg.icon}" class="w-3.5 h-3.5"></i> ${cfg.label}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-mono text-xs font-semibold">
+                  ${item.provider_or_code || 'N/A'}
+                </span>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">${item.status}</span>
+              </div>
+              <h4 class="text-base font-bold text-white">${item.title}</h4>
+              <p class="text-sm text-slate-300 flex items-center gap-2">
+                <span>${item.location_from || ''}</span>
+                ${item.location_to ? `<i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span>${item.location_to}</span>` : ''}
+              </p>
+              <div class="flex flex-wrap gap-2 pt-1">
+                ${detailBadges}
+                <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-400 text-xs">👤 ${item.assigned_to}</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex md:flex-col items-center md:items-end justify-between gap-2 border-t md:border-t-0 border-slate-800 pt-3 md:pt-0">
+            <span class="font-semibold text-sm text-slate-200">${Number(item.cost).toLocaleString('vi-VN')} ₫</span>
+            <div class="flex items-center gap-2">
+              ${item.qr_image ? `<button onclick="showQr('${item.title}', '${item.qr_image}')" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-600 hover:text-white text-xs font-medium flex items-center gap-1.5 transition"><i data-lucide="qr-code" class="w-4 h-4"></i> Mở QR</button>` : ''}
+              <button onclick="deleteItem(${item.id})" class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-rose-600/20 text-slate-400 hover:text-rose-400 transition" title="Xóa mục này">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDynamicFields() {
+      const type = document.getElementById('f_type').value;
+      const box = document.getElementById('dynamicFields');
+      if (type === 'flight') {
+        box.innerHTML = `
+          <input id="d_seat" placeholder="Số ghế (VD: 14A, 14B)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+          <input id="d_baggage" placeholder="Hành lý (VD: 20kg ký gửi)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+        `;
+      } else if (type === 'train') {
+        box.innerHTML = `
+          <input id="d_coach" placeholder="Số toa (VD: Toa 3)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+          <input id="d_seat" placeholder="Số ghế/giường (VD: Ghế 12, 14)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+        `;
+      } else if (type === 'hotel') {
+        box.innerHTML = `
+          <input id="d_breakfast" placeholder="Ăn sáng (VD: Có Buffet sáng)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+          <input id="d_hotline" placeholder="SĐT lễ tân khách sạn" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+        `;
+      } else if (type === 'esim') {
+        box.innerHTML = `
+          <input id="d_iccid" placeholder="Số ICCID của eSIM" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+          <input id="d_activation" placeholder="Mã kích hoạt LPA / Ghi chú" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+        `;
+      } else {
+        box.innerHTML = `
+          <input id="d_slot" placeholder="Khung giờ vào cửa (VD: 08:00 - 16:00)" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
+        `;
+      }
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = err => reject(err);
+      });
+    }
+
+    async function submitItem(e) {
+      e.preventDefault();
+      const details = {};
+      document.querySelectorAll('#dynamicFields input').forEach(inp => {
+        if (inp.value) details[inp.id] = inp.value;
+      });
+
+      const fileInput = document.getElementById('f_qr');
+      let qr_image = null;
+      if (fileInput.files.length > 0) {
+        qr_image = await toBase64(fileInput.files[0]);
+      }
+
+      const payload = {
+        trip_id: currentTripId,
+        item_type: document.getElementById('f_type').value,
+        provider_or_code: document.getElementById('f_code').value,
+        title: document.getElementById('f_title').value,
+        start_datetime: document.getElementById('f_start').value,
+        end_datetime: document.getElementById('f_end').value || null,
+        location_from: document.getElementById('f_from').value,
+        location_to: document.getElementById('f_to').value,
+        assigned_to: document.getElementById('f_assigned').value,
+        cost: Number(document.getElementById('f_cost').value || 0),
+        status: document.getElementById('f_status').value,
+        details,
+        qr_image
+      };
+
+      await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      closeItemModal();
+      document.getElementById('itemForm').reset();
+      loadTrips();
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Xóa hạng mục này khỏi lịch trình?')) return;
+      await fetch(`/api/items/${id}`, { method: 'DELETE' });
+      loadTrips();
+    }
+
+    async function submitTrip(e) {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById('t_title').value,
+        destination: document.getElementById('t_dest').value,
+        start_date: document.getElementById('t_start').value,
+        end_date: document.getElementById('t_end').value,
+        members: document.getElementById('t_members').value
+      };
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const newTrip = await res.json();
+      currentTripId = newTrip.id;
+      closeTripModal();
+      loadTrips();
+    }
+
+    function showQr(title, src) {
+      document.getElementById('qrModalTitle').innerText = title;
+      document.getElementById('qrModalImg').src = src;
+      document.getElementById('qrModal').classList.remove('hidden');
+      document.getElementById('qrModal').classList.add('flex');
+    }
+
+    function openItemModal() { renderDynamicFields(); document.getElementById('itemModal').classList.remove('hidden'); document.getElementById('itemModal').classList.add('flex'); }
+    function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
+    function openTripModal() { document.getElementById('tripModal').classList.remove('hidden'); document.getElementById('tripModal').classList.add('flex'); }
+    function closeTripModal() { document.getElementById('tripModal').classList.add('hidden'); }
+
+    loadTrips();
+  </script>
+</body>
+</html>
