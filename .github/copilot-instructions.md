@@ -1,0 +1,22 @@
+# Copilot instructions for this repo
+
+- This repo is a very small full-stack travel planner: a static frontend, a single Node/Express API, and a Postgres database.
+- Architecture: `frontend/index.html` is the application UI (plain HTML + JS + Tailwind CDN + Lucide icons). It is served by nginx in `frontend/Dockerfile`, with `/api/*` proxied to the backend in `frontend/nginx.conf`.
+- The backend in `backend/server.js` is intentionally minimal: one Express app with a `pg` pool, direct route handlers, and no MVC/router split. If you add a new endpoint, keep it in this file unless the change clearly warrants a new file.
+- Data flow is simple: browser `fetch('/api/...')` calls -> Express route -> `SELECT`/`INSERT`/`DELETE` against Postgres -> JSON response back to the page.
+- Database schema and sample seed data live in `db/init.sql`. Core tables are `trips` and `itinerary_items`; the app expects fields such as `trip_id`, `item_type`, `provider_or_code`, `details`, and `qr_image` to remain consistent with the frontend.
+- `docker-compose.yml` is the primary dev workflow. It starts `db`, `backend`, and `frontend` together, with the backend depending on Postgres health checks and the frontend exposing `http://localhost:8080`.
+- The intended runtime environment is: backend on port `4000`, frontend on port `8080`, database on `travel-db` (internal network) with `DATABASE_URL=postgres://travel_user:travel_secret_password_2026@db:5432/travel_db`.
+- There is no build system or test runner in this repo today. Validation is via Docker Compose and quick API checks, not `npm test` or a framework build.
+- Typical local validation: `docker compose up --build` then browse `http://localhost:8080`; if debugging API issues, use `docker compose logs -f backend` and `curl http://localhost:4000/api/trips`.
+- Keep DB and API field names aligned with the frontend. The app uses raw column names like `start_date`, `end_date`, `start_datetime`, `end_datetime`, `assigned_to`, `cost`, `status`, and `item_type`.
+- `frontend/index.html` is a single-file app with global state (`trips`, `currentTripId`, `items`, `currentFilter`) and helper functions like `loadTrips()`, `renderTimeline()`, and `submitItem()`. New UI behavior should fit that style.
+- `item_type` values are standardized as: `flight`, `hotel`, `train`, `esim`, and `ticket`. The filter tabs and form options mirror these values exactly.
+- `details` is a JSONB object used for per-item metadata like seat numbers, baggage, breakfast info, ICCID, or ticket slots. Keep keys short and JSON-safe; they are displayed as badges in the UI.
+- `qr_image` stores a Base64 data URL for QR images. Frontend reads `item.qr_image` and displays it in the QR modal; maintain this contract.
+- Do not introduce frameworks (React/Vue/etc.) or a separate service layer unless the request explicitly requires it; the codebase intentionally stays low-complexity.
+- When changing API contracts, update both `backend/server.js` and `frontend/index.html`; if changing the schema, also update `db/init.sql` so fresh containers initialize correctly.
+- Keep the app’s language conventions consistent with the existing Vietnamese UI and field labels in the frontend; avoid renaming user-facing strings without need.
+- The project is not a general CRUD app; it is a personal/household itinerary manager for flights, hotels, trains, eSIMs, and attraction tickets.
+- Prefer minimal, direct edits over architectural abstraction. This repo values simple, easy-to-inspect code more than strong separation of concerns.
+- No additional README/AGENTS instructions were found in the workspace, so this file should be treated as the primary AI guidance for the repo.
