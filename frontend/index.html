@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TravelOS - Quản lý Lịch trình & Giao tiếp Du lịch</title>
+  <title>TravelOS - Quản lý Lịch trình, Hành lý & Giao tiếp Du lịch</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -32,7 +32,7 @@
   <!-- TOAST THÔNG BÁO COPY NHANH -->
   <div id="copyToast" class="fixed bottom-5 right-5 z-[100] hidden items-center gap-2.5 px-4 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-semibold shadow-2xl border border-emerald-400/40 transition-all">
     <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0"></i>
-    <span id="copyToastText">Đã sao chép địa chỉ tiếng Trung!</span>
+    <span id="copyToastText">Đã sao chép!</span>
   </div>
 
   <!-- MÀN HÌNH ĐĂNG NHẬP -->
@@ -44,7 +44,7 @@
         </div>
         <div>
           <h1 class="text-2xl font-bold text-white">TravelOS</h1>
-          <p class="text-xs text-slate-400">Hệ thống Quản lý Hành trình & Giao tiếp Du lịch</p>
+          <p class="text-xs text-slate-400">Hệ thống Quản lý Hành trình & Hành lý Du lịch</p>
         </div>
       </div>
 
@@ -67,7 +67,7 @@
   </div>
 
   <!-- SIDEBAR -->
-  <aside class="w-full md:w-80 glass border-r border-slate-800 p-5 flex flex-col gap-5 shrink-0">
+  <aside class="w-full md:w-80 glass border-r border-slate-800 p-5 flex flex-col gap-4 shrink-0">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
@@ -83,15 +83,26 @@
       </button>
     </div>
 
-    <button onclick="openPhrasebookModal()" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500/20 to-rose-500/20 hover:from-amber-500/30 hover:to-rose-500/30 border border-amber-500/40 text-amber-300 font-semibold text-sm flex items-center justify-between shadow-lg transition">
-      <span class="flex items-center gap-2.5">
-        <i data-lucide="volume-2" class="w-5 h-5 text-amber-400"></i>
-        <span>Giao tiếp nhanh (Tiếng Trung)</span>
-      </span>
-      <span class="text-xs bg-amber-500/20 px-2 py-0.5 rounded-md text-amber-200">Loa AI</span>
-    </button>
+    <!-- 2 NÚT TRUY CẬP NHANH NỔI BẬT Ở SIDEBAR -->
+    <div class="space-y-2">
+      <button onclick="setFilter('packing')" class="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-orange-500/25 to-amber-500/20 hover:from-orange-500/35 hover:to-amber-500/30 border border-orange-500/50 text-orange-300 font-semibold text-sm flex items-center justify-between shadow-lg transition">
+        <span class="flex items-center gap-2.5">
+          <i data-lucide="luggage" class="w-5 h-5 text-orange-400"></i>
+          <span>Quản lý Đồ dùng & Vali</span>
+        </span>
+        <span id="sidebarPackingBadge" class="text-xs bg-orange-500 text-slate-950 font-bold px-2 py-0.5 rounded-full">Mở</span>
+      </button>
 
-    <div class="flex-1 overflow-y-auto">
+      <button onclick="openPhrasebookModal()" class="w-full py-2.5 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-amber-500/30 text-amber-300 font-medium text-xs flex items-center justify-between transition">
+        <span class="flex items-center gap-2">
+          <i data-lucide="volume-2" class="w-4 h-4 text-amber-400"></i>
+          <span>Giao tiếp nhanh (Tiếng Trung)</span>
+        </span>
+        <span class="text-[11px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-200">Loa AI</span>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto pt-1">
       <div class="flex items-center justify-between mb-3">
         <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Danh sách chuyến đi</p>
         <button onclick="openTripModal()" class="text-xs text-indigo-400 hover:text-indigo-300">+ Thêm mới</button>
@@ -158,7 +169,7 @@
 
         <div class="flex flex-wrap items-center gap-2.5">
           <div class="bg-slate-900/90 border border-slate-800 px-4 py-2 rounded-xl">
-            <span class="text-xs text-slate-400 block">Tổng chi phí dự kiến</span>
+            <span class="text-xs text-slate-400 block">Tổng ngân sách (Gồm cả đồ dùng)</span>
             <span id="currentTotalCost" class="text-lg font-bold text-emerald-400">0 ₫</span>
           </div>
 
@@ -167,49 +178,133 @@
             <span>Giao tiếp nhanh</span>
           </button>
 
-          <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)" />
-          <button onclick="triggerExcelUpload()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-emerald-600/25 transition text-sm">
-            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-            <span>Upload Trip.com (.xlsx)</span>
-          </button>
+          <!-- Hai nút thêm lịch trình sẽ tự động ẩn đi khi người dùng chuyển sang tab Đồ dùng & Hành lý để đỡ loạn -->
+          <div id="itineraryHeaderActions" class="flex flex-wrap items-center gap-2.5">
+            <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)" />
+            <button onclick="triggerExcelUpload()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-emerald-600/25 transition text-sm">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+              <span>Upload Trip.com (.xlsx)</span>
+            </button>
 
-          <button onclick="openItemModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-indigo-600/25 transition text-sm">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i>
-            <span>Thêm mục</span>
-          </button>
+            <button onclick="openItemModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-indigo-600/25 transition text-sm">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i>
+              <span>Thêm lịch trình</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- THANH BỘ LỌC TÍNH NĂNG (TABS) -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6">
-      <button onclick="setFilter('all')" data-tab="all" class="tab-btn bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
-        <i data-lucide="calendar-clock" class="w-4 h-4"></i> Tất cả Lịch trình (Không gồm eSIM)
+    <!-- THANH BỘ LỌC TÍNH NĂNG (ĐƯA TAB ĐỒ DÙNG & HÀNH LÝ LÊN VỊ TRÍ SỐ 2 ĐỂ DỄ THẤY NGAY LẬP TỨC) -->
+    <div class="flex flex-wrap items-center gap-2 pb-3 mb-6">
+      <button onclick="setFilter('all')" data-tab="all" class="tab-btn bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+        <i data-lucide="calendar-clock" class="w-4 h-4"></i> Tất cả Lịch trình
       </button>
-      <button onclick="setFilter('flight')" data-tab="flight" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+
+      <!-- TAB ĐỒ DÙNG & HÀNH LÝ NẰM NGAY VỊ TRÍ SỐ 2 -->
+      <button onclick="setFilter('packing')" data-tab="packing" class="tab-btn bg-slate-900 hover:bg-slate-800 text-orange-300 border border-orange-500/40 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shrink-0">
+        <i data-lucide="luggage" class="w-4 h-4 text-orange-400"></i> Đồ dùng & Hành lý <span id="packingCountBadge" class="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 text-xs">0</span>
+      </button>
+
+      <button onclick="setFilter('flight')" data-tab="flight" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="plane" class="w-4 h-4 text-sky-400"></i> Giờ bay
       </button>
-      <button onclick="setFilter('hotel')" data-tab="hotel" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+      <button onclick="setFilter('hotel')" data-tab="hotel" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="hotel" class="w-4 h-4 text-amber-400"></i> Khách sạn
       </button>
-      <button onclick="setFilter('train')" data-tab="train" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+      <button onclick="setFilter('train')" data-tab="train" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="train-front" class="w-4 h-4 text-emerald-400"></i> Vé tàu / Xe
       </button>
-      <button onclick="setFilter('ticket')" data-tab="ticket" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+      <button onclick="setFilter('ticket')" data-tab="ticket" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="ticket" class="w-4 h-4 text-rose-400"></i> Vé tham quan
       </button>
-      <button onclick="setFilter('activity')" data-tab="activity" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+      <button onclick="setFilter('activity')" data-tab="activity" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="utensils" class="w-4 h-4 text-teal-400"></i> Hoạt động / Ăn uống
       </button>
-      <button onclick="setFilter('esim')" data-tab="esim" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
+      <button onclick="setFilter('esim')" data-tab="esim" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="smartphone-nfc" class="w-4 h-4 text-purple-400"></i> Quản lý eSIM <span id="esimCountBadge" class="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 text-xs">0</span>
       </button>
     </div>
 
-    <!-- DANH SÁCH LỊCH TRÌNH -->
+    <!-- DANH SÁCH LỊCH TRÌNH HOẶC DANH SÁCH ĐỒ DÙNG -->
     <div id="timelineContainer" class="space-y-8"></div>
 
   </main>
+
+  <!-- MODAL THÊM / SỬA ĐỒ DÙNG & DỤNG CỤ CẦN CHUẨN BỊ (PACKING ITEM MODAL) -->
+  <div id="packingModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="glass bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 id="packingModalTitle" class="text-lg font-bold text-white flex items-center gap-2">
+          <i data-lucide="luggage" class="w-5 h-5 text-orange-400"></i>
+          <span>Thêm Đồ dùng / Dụng cụ cần chuẩn bị</span>
+        </h3>
+        <button onclick="closePackingModal()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
+      </div>
+      <form id="packingForm" onsubmit="submitPackingItem(event)" class="space-y-4 text-sm">
+        <input type="hidden" id="pk_id" />
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-2">
+            <label class="block text-slate-400 mb-1">Tên đồ dùng / Dụng cụ</label>
+            <input id="pk_name" required placeholder="VD: Áo phao giữ nhiệt, Bình oxy cầm tay, Sạc dự phòng..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Số lượng</label>
+            <input type="number" id="pk_qty" min="1" value="1" required class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Trạng thái chuẩn bị</label>
+            <select id="pk_status" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white">
+              <option value="Chưa có">🔴 Chưa có (Ưu tiên lên đầu)</option>
+              <option value="Đã có">🟡 Đã có (Chưa xếp vào vali)</option>
+              <option value="Đã chuẩn bị">🟢 Đã chuẩn bị (Đã vào vali)</option>
+              <option value="Sang đó rồi mua">🟣 Sang đó rồi mua</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Loại hành lý (Ký gửi / Xách tay)</label>
+            <select id="pk_luggage" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white">
+              <option value="Ký gửi">🧳 Ký gửi (Checked Baggage)</option>
+              <option value="Xách tay">🎒 Xách tay (Cabin / Carry-on)</option>
+              <option value="Mặc trên người">👕 Mặc / Đeo theo người</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Để trong Vali / Balo của ai?</label>
+            <input id="pk_owner" list="suitcaseOwnersList" required value="Vali chung" placeholder="VD: Vali của Quỳnh, Vali của Dương..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+            <datalist id="suitcaseOwnersList">
+              <option value="Vali chung"></option>
+              <option value="Vali Quỳnh"></option>
+              <option value="Vali Dương"></option>
+              <option value="Balo xách tay"></option>
+              <option value="Vali của Bố"></option>
+              <option value="Vali của Mẹ"></option>
+            </datalist>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Giá tiền (VNĐ)</label>
+            <input type="number" id="pk_cost" min="0" value="0" placeholder="Nhập 0 nếu đã có sẵn" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Ghi chú thêm (Lưu ý hải quan / pin / chất lỏng)</label>
+          <input id="pk_notes" placeholder="VD: Sạc dự phòng bắt buộc để Xách tay, không được Ký gửi..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closePackingModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300">Hủy</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-semibold">Lưu đồ dùng</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL GIAO TIẾP NHANH TIẾNG TRUNG -->
   <div id="phrasebookModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
@@ -250,7 +345,7 @@
     </div>
   </div>
 
-  <!-- MODAL HIỂN THỊ CHỮ TRUNG QUỐC KHỔNG LỒ + NÚT COPY NHANH TÌM MAP -->
+  <!-- MODAL HIỂN THỊ CHỮ TRUNG QUỐC KHỔNG LỒ -->
   <div id="bigChineseModal" onclick="this.classList.add('hidden')" class="fixed inset-0 bg-black/90 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full p-8 text-center space-y-5 shadow-2xl" onclick="event.stopPropagation()">
       <span class="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-semibold uppercase tracking-wider">Đưa màn hình này cho người bản địa / Tài xế</span>
@@ -369,7 +464,6 @@
           </div>
         </div>
 
-        <!-- Hiển thị tự động số đêm khi chọn Khách sạn -->
         <div id="hotelNightsPreview" class="hidden px-3.5 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-xs text-amber-300 font-semibold items-center justify-between">
           <span id="hotelNightsText">🌙 Thời gian lưu trú: 1 đêm</span>
           <span class="text-[11px] text-slate-300 font-normal">Check-in tiêu chuẩn 14:00 • Check-out 12:00</span>
@@ -538,7 +632,9 @@
     let trips = [];
     let currentTripId = null;
     let items = [];
+    let packingItems = [];
     let currentFilter = 'all';
+    let packingSubFilter = 'all';
     let parsedImportRows = [];
     let customPhrases = [];
     let currentPhraseCategory = 'all';
@@ -553,7 +649,22 @@
       activity: { icon: 'utensils', label: 'Hoạt động', badge: 'bg-teal-500/15 text-teal-400 border-teal-500/30' }
     };
 
-    // ================= HÀM TÍNH SỐ ĐÊM LƯU TRÚ & ĐỊNH DẠNG NGÀY NHẬN/TRẢ PHÒNG =================
+    // THỨ TỰ ƯU TIÊN SẮP XẾP ĐỒ DÙNG:
+    // 1. Chưa có (Ưu tiên cao nhất lên đầu) -> 2. Đã có -> 3. Đã chuẩn bị -> 4. Sang đó rồi mua
+    const PACKING_STATUS_PRIORITY = {
+      'Chưa có': 1,
+      'Đã có': 2,
+      'Đã chuẩn bị': 3,
+      'Sang đó rồi mua': 4
+    };
+
+    const PACKING_STATUS_STYLE = {
+      'Chưa có': { badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40', label: '🔴 Chưa có (Ưu tiên 1)' },
+      'Đã có': { badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40', label: '🟡 Đã có (Chưa vào vali)' },
+      'Đã chuẩn bị': { badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', label: '🟢 Đã chuẩn bị (Đã vào vali)' },
+      'Sang đó rồi mua': { badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40', label: '🟣 Sang đó rồi mua' }
+    };
+
     function normalizeIsoLocal(dtStr) {
       if (!dtStr) return '';
       const clean = String(dtStr).trim().replace(' ', 'T');
@@ -595,7 +706,6 @@
       return `${yy}-${mm}-${dd}`;
     }
 
-    // Tính số đêm lưu trú khách sạn dựa trên chênh lệch ngày (Check-out Date trừ Check-in Date)
     function calculateHotelNights(startDt, endDt, explicitNights) {
       const sKey = extractDateKey(startDt);
       const eKey = extractDateKey(endDt);
@@ -606,7 +716,7 @@
         if (diffDays > 0) return diffDays;
       }
       if (explicitNights && Number(explicitNights) > 0) return Number(explicitNights);
-      return 1; // Mặc định tối thiểu 1 đêm nếu chưa điền ngày trả phòng
+      return 1;
     }
 
     function resolveHotelCheckoutDatetime(startDt, endDt, nights = 1) {
@@ -620,7 +730,6 @@
       return `${checkoutDate}T12:00`;
     }
 
-    // ================= COPY NHANH ĐỊA CHỈ TIẾNG TRUNG =================
     async function copyToClipboard(text, label = 'Địa chỉ tiếng Trung') {
       if (!text) return;
       try {
@@ -1037,6 +1146,333 @@
       renderPhrasebook();
     }
 
+    // ================= QUẢN LÝ ĐỒ DÙNG & HÀNH LÝ CẦN CHUẨN BỊ (PACKING LIST) =================
+    async function loadPackingItems(tripId) {
+      if (!tripId) return;
+      try {
+        const res = await apiFetch(`/api/trips/${tripId}/packing`);
+        if (res.ok) {
+          packingItems = await res.json();
+        } else {
+          packingItems = [];
+        }
+      } catch (e) {
+        packingItems = [];
+      }
+      updatePackingBadge();
+      if (currentFilter === 'packing') {
+        renderTimeline();
+      }
+    }
+
+    function updatePackingBadge() {
+      const badge = document.getElementById('packingCountBadge');
+      const sbBadge = document.getElementById('sidebarPackingBadge');
+      const missingCount = packingItems.filter(p => p.status === 'Chưa có').length;
+      const text = missingCount > 0 ? `${missingCount} chưa có` : `${packingItems.length} món`;
+      if (badge) badge.innerText = text;
+      if (sbBadge) sbBadge.innerText = text;
+    }
+
+    function openPackingModal() {
+      if (!currentTripId) return alert('Vui lòng chọn hoặc tạo một chuyến du lịch trước!');
+      document.getElementById('packingForm').reset();
+      document.getElementById('pk_id').value = '';
+      document.getElementById('pk_qty').value = 1;
+      document.getElementById('pk_status').value = 'Chưa có';
+      document.getElementById('pk_luggage').value = 'Ký gửi';
+      document.getElementById('pk_owner').value = 'Vali chung';
+      document.getElementById('pk_cost').value = 0;
+      document.getElementById('packingModalTitle').innerHTML = `<i data-lucide="luggage" class="w-5 h-5 text-orange-400"></i><span>Thêm Đồ dùng / Dụng cụ cần chuẩn bị</span>`;
+      document.getElementById('packingModal').classList.remove('hidden');
+      document.getElementById('packingModal').classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function openEditPackingModal(id) {
+      const item = packingItems.find(p => p.id === id);
+      if (!item) return;
+      document.getElementById('pk_id').value = item.id;
+      document.getElementById('pk_name').value = item.item_name || '';
+      document.getElementById('pk_qty').value = item.quantity || 1;
+      document.getElementById('pk_status').value = item.status || 'Chưa có';
+      document.getElementById('pk_luggage').value = item.luggage_type || 'Ký gửi';
+      document.getElementById('pk_owner').value = item.suitcase_owner || 'Vali chung';
+      document.getElementById('pk_cost').value = item.cost || 0;
+      document.getElementById('pk_notes').value = item.notes || '';
+      document.getElementById('packingModalTitle').innerHTML = `<i data-lucide="pencil" class="w-5 h-5 text-orange-400"></i><span>Chỉnh sửa Đồ dùng / Hành lý</span>`;
+      document.getElementById('packingModal').classList.remove('hidden');
+      document.getElementById('packingModal').classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closePackingModal() {
+      document.getElementById('packingModal').classList.add('hidden');
+    }
+
+    async function submitPackingItem(e) {
+      e.preventDefault();
+      const editId = document.getElementById('pk_id').value;
+      const payload = {
+        trip_id: currentTripId,
+        item_name: document.getElementById('pk_name').value.trim(),
+        quantity: Number(document.getElementById('pk_qty').value || 1),
+        status: document.getElementById('pk_status').value,
+        luggage_type: document.getElementById('pk_luggage').value,
+        suitcase_owner: document.getElementById('pk_owner').value.trim() || 'Vali chung',
+        cost: Number(document.getElementById('pk_cost').value || 0),
+        notes: document.getElementById('pk_notes').value.trim()
+      };
+
+      if (editId) {
+        await apiFetch(`/api/packing/${editId}`, { method: 'PUT', body: JSON.stringify(payload) });
+      } else {
+        await apiFetch('/api/packing', { method: 'POST', body: JSON.stringify(payload) });
+      }
+
+      closePackingModal();
+      await loadPackingItems(currentTripId);
+      await loadTrips();
+    }
+
+    // Nút tạo nhanh bộ đồ dùng gợi ý mẫu 1-chạm để bạn dễ hình dung và chỉnh sửa
+    async function seedSamplePackingItems() {
+      if (!currentTripId) return;
+      const samples = [
+        { item_name: 'Miếng dán giữ nhiệt & Găng tay lót lông', quantity: 10, status: 'Chưa có', luggage_type: 'Ký gửi', suitcase_owner: 'Vali Quỳnh', cost: 250000, notes: 'Dùng khi đi Cửu Trại Câu & Tứ Cô Nương Sơn trời âm độ' },
+        { item_name: 'Thuốc chống say độ cao (Hoạt huyết / Hồng cảnh thiên)', quantity: 2, status: 'Chưa có', luggage_type: 'Xách tay', suitcase_owner: 'Balo xách tay', cost: 350000, notes: 'Uống trước khi lên độ cao 3.200m' },
+        { item_name: 'Bình thở Oxy cầm tay mini', quantity: 4, status: 'Sang đó rồi mua', luggage_type: 'Xách tay', suitcase_owner: 'Mua tại Thành Đô', cost: 200000, notes: 'Không được mang lên máy bay, sang Thành Đô mua ở tiệm thuốc' },
+        { item_name: 'Sạc dự phòng 20.000mAh + Cáp sạc', quantity: 2, status: 'Đã có', luggage_type: 'Xách tay', suitcase_owner: 'Balo xách tay', cost: 0, notes: 'Bắt buộc để Hành lý Xách tay, cấm để Ký gửi' },
+        { item_name: 'Áo phao lông vũ dày + Áo giữ nhiệt Heattech', quantity: 4, status: 'Đã có', luggage_type: 'Ký gửi', suitcase_owner: 'Vali Dương', cost: 0, notes: 'Hút chân không cho gọn vali' },
+        { item_name: 'Hộ chiếu bản gốc + Ảnh thẻ + Tiền mặt Nhân dân tệ', quantity: 2, status: 'Đã chuẩn bị', luggage_type: 'Xách tay', suitcase_owner: 'Túi đeo người', cost: 0, notes: 'Luôn mang sát người khi làm thủ tục' }
+      ];
+      for (const s of samples) {
+        await apiFetch('/api/packing', {
+          method: 'POST',
+          body: JSON.stringify({ trip_id: currentTripId, ...s })
+        });
+      }
+      await loadPackingItems(currentTripId);
+      await loadTrips();
+      showCopyToast('Đã tạo bộ đồ dùng mẫu thành công!');
+    }
+
+    async function quickChangePackingStatus(id, newStatus) {
+      await apiFetch(`/api/packing/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+      await loadPackingItems(currentTripId);
+    }
+
+    async function deletePackingItem(id) {
+      if (!confirm('Xóa đồ dùng này khỏi danh sách chuẩn bị?')) return;
+      await apiFetch(`/api/packing/${id}`, { method: 'DELETE' });
+      await loadPackingItems(currentTripId);
+      await loadTrips();
+    }
+
+    function setPackingSubFilter(sub) {
+      packingSubFilter = sub;
+      renderTimeline();
+    }
+
+    function renderPackingTab(container) {
+      // Sắp xếp ưu tiên đúng yêu cầu: 1. Chưa có -> 2. Đã có -> 3. Đã chuẩn bị -> 4. Sang đó rồi mua
+      const sorted = [...packingItems].sort((a, b) => {
+        const pa = PACKING_STATUS_PRIORITY[a.status] || 99;
+        const pb = PACKING_STATUS_PRIORITY[b.status] || 99;
+        if (pa !== pb) return pa - pb;
+        return b.id - a.id;
+      });
+
+      const countChuaCo = sorted.filter(i => i.status === 'Chưa có').length;
+      const countDaCo = sorted.filter(i => i.status === 'Đã có').length;
+      const countDaChuanBi = sorted.filter(i => i.status === 'Đã chuẩn bị').length;
+      const countSangDoMua = sorted.filter(i => i.status === 'Sang đó rồi mua').length;
+      const totalPackingCost = sorted.reduce((sum, i) => sum + Number(i.cost || 0), 0);
+
+      const uniqueSuitcases = [...new Set(sorted.map(i => i.suitcase_owner).filter(Boolean))];
+
+      const filteredList = sorted.filter(item => {
+        if (packingSubFilter === 'all') return true;
+        if (['Ký gửi', 'Xách tay', 'Mặc trên người'].includes(packingSubFilter)) {
+          return item.luggage_type === packingSubFilter;
+        }
+        return item.suitcase_owner === packingSubFilter;
+      });
+
+      container.innerHTML = `
+        <div class="space-y-6">
+          <!-- KHUNG ĐIỀU KHIỂN & NÚT THÊM ĐỒ DÙNG RIÊNG BIỆT TRONG TAB -->
+          <div class="glass rounded-2xl p-5 border border-orange-500/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i data-lucide="luggage" class="w-5 h-5 text-orange-400"></i>
+                <span>Quản lý Đồ dùng, Dụng cụ & Hành lý cần chuẩn bị</span>
+              </h3>
+              <p class="text-xs text-slate-400">
+                Thứ tự ưu tiên hiển thị: <strong class="text-rose-400">1. Chưa có</strong> ➔ <strong class="text-amber-400">2. Đã có</strong> ➔ <strong class="text-emerald-400">3. Đã chuẩn bị</strong> ➔ <strong class="text-purple-400">4. Sang đó rồi mua</strong>.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+              <div class="bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl text-right">
+                <span class="text-[11px] text-slate-400 block">Tổng tiền mua đồ dùng</span>
+                <span class="text-base font-bold text-orange-400">${totalPackingCost.toLocaleString('vi-VN')} ₫</span>
+              </div>
+              ${sorted.length === 0 ? `
+                <button onclick="seedSamplePackingItems()" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-medium px-3.5 py-3 rounded-xl transition text-xs">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i>
+                  <span>Tạo bộ đồ dùng mẫu</span>
+                </button>
+              ` : ''}
+              <button onclick="openPackingModal()" class="flex items-center gap-2 bg-orange-600 hover:bg-orange-500 text-white font-semibold px-4 py-3 rounded-xl shadow-lg shadow-orange-600/25 transition text-sm">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span>+ Thêm Đồ dùng mới</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- THỐNG KÊ NHANH 4 TRẠNG THÁI THEO ĐÚNG THỨ TỰ ƯU TIÊN -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between">
+              <div>
+                <span class="text-xs text-rose-300 font-semibold block">1. 🔴 Chưa có</span>
+                <span class="text-[11px] text-slate-400">Ưu tiên mua trước</span>
+              </div>
+              <span class="text-2xl font-black text-rose-400">${countChuaCo}</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+              <div>
+                <span class="text-xs text-amber-300 font-semibold block">2. 🟡 Đã có</span>
+                <span class="text-[11px] text-slate-400">Chưa xếp vào vali</span>
+              </div>
+              <span class="text-2xl font-black text-amber-400">${countDaCo}</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
+              <div>
+                <span class="text-xs text-emerald-300 font-semibold block">3. 🟢 Đã chuẩn bị</span>
+                <span class="text-[11px] text-slate-400">Đã nằm trong vali</span>
+              </div>
+              <span class="text-2xl font-black text-emerald-400">${countDaChuanBi}</span>
+            </div>
+            <div class="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-between">
+              <div>
+                <span class="text-xs text-purple-300 font-semibold block">4. 🟣 Sang đó rồi mua</span>
+                <span class="text-[11px] text-slate-400">Mua tại điểm đến</span>
+              </div>
+              <span class="text-2xl font-black text-purple-400">${countSangDoMua}</span>
+            </div>
+          </div>
+
+          <!-- BỘ LỌC NHANH THEO KÝ GỬI / XÁCH TAY & VALI CỦA AI -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            <button onclick="setPackingSubFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${packingSubFilter === 'all' ? 'bg-orange-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'}">
+              Tất cả (${sorted.length})
+            </button>
+            <button onclick="setPackingSubFilter('Xách tay')" class="px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${packingSubFilter === 'Xách tay' ? 'bg-sky-600 text-white' : 'bg-slate-900 text-sky-300 border border-slate-800 hover:bg-slate-800'}">
+              🎒 Để Xách tay
+            </button>
+            <button onclick="setPackingSubFilter('Ký gửi')" class="px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${packingSubFilter === 'Ký gửi' ? 'bg-indigo-600 text-white' : 'bg-slate-900 text-indigo-300 border border-slate-800 hover:bg-slate-800'}">
+              🧳 Để Ký gửi
+            </button>
+            <button onclick="setPackingSubFilter('Mặc trên người')" class="px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${packingSubFilter === 'Mặc trên người' ? 'bg-teal-600 text-white' : 'bg-slate-900 text-teal-300 border border-slate-800 hover:bg-slate-800'}">
+              👕 Mặc / Đeo người
+            </button>
+            ${uniqueSuitcases.map(owner => `
+              <button onclick="setPackingSubFilter('${owner.replace(/'/g, "\\'")}')" class="px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${packingSubFilter === owner ? 'bg-amber-600 text-white' : 'bg-slate-900 text-amber-300 border border-slate-800 hover:bg-slate-800'}">
+                🏷️ ${owner}
+              </button>
+            `).join('')}
+          </div>
+
+          <!-- DANH SÁCH CHI TIẾT ĐỒ DÙNG -->
+          ${filteredList.length === 0 ? `
+            <div class="glass rounded-2xl p-12 text-center space-y-4">
+              <p class="text-slate-300 text-sm">Chưa có món đồ dùng nào trong danh sách của chuyến đi này.</p>
+              <div class="flex items-center justify-center gap-3">
+                <button onclick="openPackingModal()" class="px-5 py-2.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-semibold text-sm">
+                  + Thêm đồ dùng thủ công
+                </button>
+                <button onclick="seedSamplePackingItems()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 font-medium text-sm">
+                  ✨ Tạo nhanh danh sách mẫu
+                </button>
+              </div>
+            </div>
+          ` : `
+            <div class="grid gap-3">
+              ${filteredList.map(item => renderPackingCard(item)).join('')}
+            </div>
+          `}
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function renderPackingCard(item) {
+      const st = PACKING_STATUS_STYLE[item.status] || PACKING_STATUS_STYLE['Chưa có'];
+      const isPrepared = item.status === 'Đã chuẩn bị';
+      const luggageBadge = item.luggage_type === 'Xách tay'
+        ? 'bg-sky-500/15 text-sky-300 border-sky-500/30'
+        : item.luggage_type === 'Mặc trên người'
+        ? 'bg-teal-500/15 text-teal-300 border-teal-500/30'
+        : 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30';
+
+      const luggageIcon = item.luggage_type === 'Xách tay' ? 'backpack' : item.luggage_type === 'Mặc trên người' ? 'shirt' : 'luggage';
+
+      return `
+        <div class="glass rounded-2xl p-4 transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${isPrepared ? 'opacity-60 bg-slate-950/40 border-slate-800/40' : item.status === 'Chưa có' ? 'border-rose-500/40 hover:border-rose-500/60' : 'hover:border-slate-700'}">
+          <div class="flex items-start gap-3.5 flex-1">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm ${st.badge} border">
+              x${item.quantity || 1}
+            </div>
+            <div class="space-y-1.5 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border ${st.badge}">
+                  ${st.label}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-md text-xs font-medium border flex items-center gap-1 ${luggageBadge}">
+                  <i data-lucide="${luggageIcon}" class="w-3.5 h-3.5"></i>
+                  Để ở: ${item.luggage_type}
+                </span>
+                <span class="px-2.5 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+                  🏷️ Trong: ${item.suitcase_owner || 'Vali chung'}
+                </span>
+              </div>
+
+              <h4 class="text-base font-bold ${isPrepared ? 'line-through text-slate-400' : 'text-white'}">
+                ${item.item_name}
+              </h4>
+
+              ${item.notes ? `<p class="text-xs text-slate-400 italic">📌 ${item.notes}</p>` : ''}
+            </div>
+          </div>
+
+          <div class="flex flex-wrap md:flex-col items-center md:items-end justify-between gap-2.5 border-t md:border-t-0 border-slate-800 pt-3 md:pt-0 shrink-0">
+            <span class="font-semibold text-sm ${Number(item.cost) > 0 ? 'text-orange-300' : 'text-slate-500'}">
+              ${Number(item.cost) > 0 ? '💰 ' + Number(item.cost).toLocaleString('vi-VN') + ' ₫' : '0 ₫ (Có sẵn)'}
+            </span>
+
+            <div class="flex items-center gap-1.5">
+              <select onchange="quickChangePackingStatus(${item.id}, this.value)" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white font-medium outline-none focus:border-orange-500 cursor-pointer">
+                <option value="Chưa có" ${item.status === 'Chưa có' ? 'selected' : ''}>🔴 Chưa có</option>
+                <option value="Đã có" ${item.status === 'Đã có' ? 'selected' : ''}>🟡 Đã có</option>
+                <option value="Đã chuẩn bị" ${item.status === 'Đã chuẩn bị' ? 'selected' : ''}>🟢 Đã chuẩn bị</option>
+                <option value="Sang đó rồi mua" ${item.status === 'Sang đó rồi mua' ? 'selected' : ''}>🟣 Sang đó rồi mua</option>
+              </select>
+
+              <button onclick="openEditPackingModal(${item.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-600/20 text-slate-300 hover:text-sky-400 text-xs flex items-center gap-1 transition">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Sửa
+              </button>
+              <button onclick="deletePackingItem(${item.id})" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600/20 text-slate-400 hover:text-rose-400 transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     // ================= BỘ ĐỌC & PHÂN TÍCH FILE EXCEL TRIP.COM =================
     function triggerExcelUpload() {
       if (!currentTripId) return alert('Vui lòng chọn hoặc tạo một chuyến du lịch trước khi upload file!');
@@ -1212,7 +1648,6 @@
           timeNote = `✓ Giờ tàu từ file: ${startTimePart}`;
         } else if (item_type === 'hotel') {
           startTimePart = '14:00';
-          // Mặc định tự động tính Ngày trả phòng (Check-out) là 12:00 trưa ngày hôm sau (1 đêm)
           const nextDay = addDaysToDateStr(datePart, 1);
           endDatetimeFull = `${nextDay}T12:00`;
           details.d_nights = '1 đêm';
@@ -1288,7 +1723,6 @@
         const zhInfo = row.details && row.details.d_chinese_name ? `<div class="text-[11px] text-amber-300 mt-0.5">🇨🇳 ${row.details.d_chinese_name}</div>` : '';
         const noteColor = (row.timeNote || '').includes('⚠️') ? 'text-amber-400 font-semibold' : 'text-emerald-400';
 
-        // Nếu là khách sạn, hiển thị badge số đêm tự động
         let hotelNightsBadge = '';
         if (row.item_type === 'hotel') {
           const n = calculateHotelNights(row.start_datetime, row.end_datetime);
@@ -1482,7 +1916,7 @@
       }
       renderTrips();
       if (currentTripId) {
-        loadItems(currentTripId);
+        await Promise.all([loadItems(currentTripId), loadPackingItems(currentTripId)]);
       } else {
         document.getElementById('timelineContainer').innerHTML = `<div class="glass rounded-2xl p-12 text-center text-slate-400">Hãy tạo chuyến du lịch đầu tiên của bạn ở menu bên trái!</div>`;
         refreshWeatherForActiveTrip();
@@ -1502,7 +1936,7 @@
           </div>
           <div class="text-xs text-slate-400 flex justify-between mt-1">
             <span>${String(t.start_date).slice(0, 10)}</span>
-            <span>${t.item_count} mục</span>
+            <span>${t.item_count} lịch trình • ${t.packing_count || 0} đồ dùng</span>
           </div>
         </div>
       `).join('');
@@ -1526,10 +1960,11 @@
       lucide.createIcons();
     }
 
-    function selectTrip(id) {
+    async function selectTrip(id) {
       currentTripId = id;
+      packingSubFilter = 'all';
       renderTrips();
-      loadItems(id);
+      await Promise.all([loadItems(id), loadPackingItems(id)]);
     }
 
     function openTripModal() {
@@ -1611,11 +2046,21 @@
 
     function setFilter(filter) {
       currentFilter = filter;
+      const headerActions = document.getElementById('itineraryHeaderActions');
+      if (headerActions) {
+        if (filter === 'packing') headerActions.classList.add('hidden');
+        else headerActions.classList.remove('hidden');
+      }
+
       document.querySelectorAll('.tab-btn').forEach(btn => {
         if (btn.dataset.tab === filter) {
-          btn.className = 'tab-btn bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
+          btn.className = filter === 'packing'
+            ? 'tab-btn bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shrink-0 shadow-lg shadow-orange-600/25'
+            : 'tab-btn bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
         } else {
-          btn.className = 'tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
+          btn.className = btn.dataset.tab === 'packing'
+            ? 'tab-btn bg-slate-900 hover:bg-slate-800 text-orange-300 border border-orange-500/40 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shrink-0'
+            : 'tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
         }
       });
       renderTimeline();
@@ -1623,6 +2068,11 @@
 
     function renderTimeline() {
       const container = document.getElementById('timelineContainer');
+
+      if (currentFilter === 'packing') {
+        renderPackingTab(container);
+        return;
+      }
 
       let filtered = [];
       if (currentFilter === 'all') {
@@ -1632,7 +2082,7 @@
       }
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="glass rounded-2xl p-12 text-center text-slate-400">Chưa có mục nào trong tab này. Bấm "Upload Trip.com (.xlsx)" hoặc "Thêm mục" để bắt đầu!</div>`;
+        container.innerHTML = `<div class="glass rounded-2xl p-12 text-center text-slate-400">Chưa có mục nào trong tab này. Bấm "Upload Trip.com (.xlsx)" hoặc "Thêm lịch trình" để bắt đầu!</div>`;
         return;
       }
 
@@ -1699,7 +2149,6 @@
       const zhAddr = d.d_chinese_address || '';
       const viAddr = d.d_address || '';
 
-      // Tính toán thông tin Nhận phòng, Trả phòng & Số đêm lưu trú cho Khách sạn
       let hotelStayBanner = '';
       if (isHotel) {
         const parsedExplicitNights = d.d_nights ? parseInt(String(d.d_nights).replace(/\D/g, ''), 10) : 1;
@@ -1770,7 +2219,6 @@
 
               <h4 class="text-base font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'}">${item.title}</h4>
 
-              <!-- HIỂN THỊ NGÀY NHẬN PHÒNG - NGÀY TRẢ PHÒNG - SỐ ĐÊM LƯU TRÚ CHO KHÁCH SẠN -->
               ${hotelStayBanner}
 
               <p class="text-sm text-slate-300 flex flex-wrap items-center gap-2">
@@ -1778,7 +2226,6 @@
                 ${item.location_to ? `<i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span>${item.location_to}</span>` : ''}
               </p>
 
-              <!-- KHỐI ĐỊA CHỈ & NÚT COPY NHANH ĐỊA CHỈ TIẾNG TRUNG ĐỂ TÌM MAP -->
               ${(viAddr || zhName || zhAddr) ? `
                 <div class="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
                   ${viAddr ? `<div class="text-xs text-slate-200 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i> <span><strong>Địa chỉ:</strong> ${viAddr}</span></div>` : ''}

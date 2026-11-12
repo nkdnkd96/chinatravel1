@@ -4,8 +4,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-// QUAN TRỌNG: Giữ nguyên chuỗi TIMESTAMP (OID 1114) và DATE (OID 1082) từ PostgreSQL,
-// không để Node.js tự chuyển sang UTC gây lệch 7 tiếng trên giao diện Web
+// Giữ nguyên chuỗi TIMESTAMP và DATE từ PostgreSQL để không bị lệch múi giờ
 types.setTypeParser(1114, (str) => str);
 types.setTypeParser(1082, (str) => str);
 
@@ -55,6 +54,22 @@ async function ensureSchema() {
         vi_text TEXT NOT NULL,
         zh_text TEXT NOT NULL,
         pinyin TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Bảng mới: Quản lý Đồ dùng & Hành lý cần chuẩn bị (Packing List)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS packing_items (
+        id SERIAL PRIMARY KEY,
+        trip_id INT REFERENCES trips(id) ON DELETE CASCADE,
+        item_name VARCHAR(255) NOT NULL,
+        quantity INT DEFAULT 1,
+        status VARCHAR(50) DEFAULT 'Chưa có', -- 'Chưa có', 'Đã có', 'Đã chuẩn bị', 'Sang đó rồi mua'
+        luggage_type VARCHAR(50) DEFAULT 'Ký gửi', -- 'Ký gửi', 'Xách tay', 'Mặc trên người'
+        suitcase_owner VARCHAR(150) DEFAULT 'Vali chung',
+        cost NUMERIC(12, 0) DEFAULT 0,
+        notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -131,11 +146,11 @@ app.get('/api/trips', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT t.*, 
-             COALESCE(SUM(i.cost), 0) as total_cost,
-             COUNT(i.id) as item_count
+             (COALESCE((SELECT SUM(cost) FROM itinerary_items WHERE trip_id = t.id), 0) +
+              COALESCE((SELECT SUM(cost) FROM packing_items WHERE trip_id = t.id), 0)) as total_cost,
+             (SELECT COUNT(id) FROM itinerary_items WHERE trip_id = t.id) as item_count,
+             (SELECT COUNT(id) FROM packing_items WHERE trip_id = t.id) as packing_count
       FROM trips t
-      LEFT JOIN itinerary_items i ON t.id = i.trip_id
-      GROUP BY t.id
       ORDER BY t.start_date ASC
     `);
     res.json(result.rows);
@@ -330,6 +345,100 @@ app.post('/api/trips/:tripId/import', authMiddleware, async (req, res) => {
   }
 });
 
+// ================= PACKING ITEMS (ĐỒ DÙNG & HÀNH LÝ CẦN CHUẨN BỊ) APIs =================
+// Lấy danh sách đồ dùng của chuyến đi (Sắp xếp ưu tiên: Chưa có -> Đã có -> Sang đó rồi mua -> Đã chuẩn bị)
+app.get('/api/trips/:tripId/packing', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM packing_items 
+       WHERE trip_id = $1 
+       ORDER BY 
+         CASE status
+           WHEN 'Chưa có' THEN 1
+           WHEN 'Đã có' THEN 2
+           WHEN 'Sang đó rồi mua' THEN 3
+           WHEN 'Đã chuẩn bị' THEN 4
+           ELSE 5
+         END ASC,
+         id DESC`,
+      [req.params.tripId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/packing', authMiddleware, async (req, res) => {
+  const { trip_id, item_name, quantity, status, luggage_type, suitcase_owner, cost, notes } = req.body;
+  try {
+    const result = await pool.query(
+      `INSERT INTO packing_items (trip_id, item_name, quantity, status, luggage_type, suitcase_owner, cost, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        trip_id,
+        item_name,
+        Number(quantity || 1),
+        status || 'Chưa có',
+        luggage_type || 'Ký gửi',
+        suitcase_owner || 'Vali chung',
+        Number(cost || 0),
+        notes || ''
+      ]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/packing/:id', authMiddleware, async (req, res) => {
+  const { item_name, quantity, status, luggage_type, suitcase_owner, cost, notes } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE packing_items 
+       SET item_name = $1, quantity = $2, status = $3, luggage_type = $4, suitcase_owner = $5, cost = $6, notes = $7
+       WHERE id = $8 RETURNING *`,
+      [
+        item_name,
+        Number(quantity || 1),
+        status || 'Chưa có',
+        luggage_type || 'Ký gửi',
+        suitcase_owner || 'Vali chung',
+        Number(cost || 0),
+        notes || '',
+        req.params.id
+      ]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Đổi nhanh trạng thái đồ dùng trực tiếp trên danh sách
+app.patch('/api/packing/:id/status', authMiddleware, async (req, res) => {
+  const { status } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE packing_items SET status = $1 WHERE id = $2 RETURNING *`,
+      [status, req.params.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/packing/:id', authMiddleware, async (req, res) => {
+  try {
+    await pool.query('DELETE FROM packing_items WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ================= CUSTOM PHRASES APIs =================
 app.get('/api/phrases', authMiddleware, async (req, res) => {
   try {
@@ -364,4 +473,4 @@ app.delete('/api/phrases/:id', authMiddleware, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`TravelOS API v4 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`TravelOS API v5 running on port ${PORT}`));
