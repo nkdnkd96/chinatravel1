@@ -3,6 +3,8 @@ const { Pool, types } = require('pg');
 const cors = require('cors');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const fs = require('fs');
 
 // Giữ nguyên chuỗi TIMESTAMP và DATE từ PostgreSQL để không bị lệch múi giờ
 types.setTypeParser(1114, (str) => str);
@@ -11,6 +13,13 @@ types.setTypeParser(1082, (str) => str);
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '12mb' }));
+
+// Tự động nhận diện thư mục chứa index.html (trong Docker volume hoặc chạy local)
+const FRONTEND_DIR = fs.existsSync(path.join(__dirname, 'frontend'))
+  ? path.join(__dirname, 'frontend')
+  : path.join(__dirname, '../frontend');
+
+app.use(express.static(FRONTEND_DIR));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -346,7 +355,6 @@ app.post('/api/trips/:tripId/import', authMiddleware, async (req, res) => {
 });
 
 // ================= PACKING ITEMS (ĐỒ DÙNG & HÀNH LÝ CẦN CHUẨN BỊ) APIs =================
-// Lấy danh sách đồ dùng của chuyến đi (Sắp xếp ưu tiên: Chưa có -> Đã có -> Sang đó rồi mua -> Đã chuẩn bị)
 app.get('/api/trips/:tripId/packing', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
@@ -416,7 +424,6 @@ app.put('/api/packing/:id', authMiddleware, async (req, res) => {
   }
 });
 
-// Đổi nhanh trạng thái đồ dùng trực tiếp trên danh sách
 app.patch('/api/packing/:id/status', authMiddleware, async (req, res) => {
   const { status } = req.body;
   try {
@@ -472,5 +479,10 @@ app.delete('/api/phrases/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// ================= SPA FRONTEND FALLBACK =================
+app.get('*', (req, res) => {
+  res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
+});
+
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`TravelOS API v5 running on port ${PORT}`));
+app.listen(PORT, () => console.log(`TravelOS Web & API running on port ${PORT}`));
