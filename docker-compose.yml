@@ -20,8 +20,9 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. Backend API
+  # 2. Backend API (Đã thêm cấu hình build)
   travel-api:
+    build: .   # Hoặc đổi thành đường dẫn chứa Dockerfile của backend nếu nằm trong thư mục con (ví dụ: build: ./backend)
     image: chinatravel1-api:latest
     container_name: travel-api
     restart: always
@@ -31,7 +32,7 @@ services:
     networks:
       - travel-net
 
-  # 3. Frontend Webapp (Nginx / Port 8080)
+  # 3. Frontend Webapp
   travel-web:
     build: .
     image: chinatravel1-frontend:latest
@@ -42,7 +43,7 @@ services:
     networks:
       - travel-net
 
-  # 4. Cloudflare Tunnel (Đọc token từ file .env)
+  # 4. Cloudflare Tunnel
   travel-tunnel:
     image: cloudflare/cloudflared:latest
     container_name: travel-tunnel
