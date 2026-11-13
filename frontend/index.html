@@ -7,6 +7,55 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- MODAL TÙY CHỌN & XEM TRƯỚC XUẤT PDF CHUYÊN NGHIỆP -->
+  <div id="pdfExportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="glass bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
+            <i data-lucide="file-text" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Xuất Hồ Sơ Lịch Trình PDF</h3>
+            <p class="text-xs text-slate-400">Thiết kế chuẩn Cẩm nang Du lịch & Hồ sơ xin Visa</p>
+          </div>
+        </div>
+        <button onclick="closePdfExportModal()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-200">
+        <p class="text-slate-400 font-medium">Chọn các phần muốn đưa vào bản PDF:</p>
+        <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+          <span class="flex items-center gap-2 font-medium"><i data-lucide="calendar-clock" class="w-4 h-4 text-indigo-400"></i> Lịch trình chi tiết theo từng ngày (Giờ giấc, Mã đặt chỗ)</span>
+          <input type="checkbox" id="pdf_inc_itinerary" checked class="w-4 h-4 accent-rose-500 rounded" />
+        </label>
+        <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+          <span class="flex items-center gap-2 font-medium"><i data-lucide="languages" class="w-4 h-4 text-amber-400"></i> Tên & Địa chỉ Tiếng Trung (Đưa tài xế / Lễ tân)</span>
+          <input type="checkbox" id="pdf_inc_chinese" checked class="w-4 h-4 accent-rose-500 rounded" />
+        </label>
+        <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+          <span class="flex items-center gap-2 font-medium"><i data-lucide="smartphone-nfc" class="w-4 h-4 text-purple-400"></i> Danh sách eSIM & Mã QR kích hoạt</span>
+          <input type="checkbox" id="pdf_inc_esim" checked class="w-4 h-4 accent-rose-500 rounded" />
+        </label>
+        <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+          <span class="flex items-center gap-2 font-medium"><i data-lucide="luggage" class="w-4 h-4 text-orange-400"></i> Checklist Đồ dùng & Phân bổ Vali (Ký gửi / Xách tay)</span>
+          <input type="checkbox" id="pdf_inc_packing" checked class="w-4 h-4 accent-rose-500 rounded" />
+        </label>
+        <label class="flex items-center justify-between p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer">
+          <span class="flex items-center gap-2 font-medium"><i data-lucide="wallet" class="w-4 h-4 text-emerald-400"></i> Bảng tổng hợp Chi phí & Ngân sách</span>
+          <input type="checkbox" id="pdf_inc_cost" checked class="w-4 h-4 accent-rose-500 rounded" />
+        </label>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
+        <button type="button" onclick="closePdfExportModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-medium">Đóng</button>
+        <button type="button" onclick="generateProfessionalTripPDF()" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-rose-600/30">
+          <i data-lucide="printer" class="w-4 h-4"></i> Tạo & Tải File PDF Ngay
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -176,6 +225,11 @@
             <span id="currentTotalCost" class="text-lg font-bold text-emerald-400">0 ₫</span>
           </div>
 
+          <button onclick="openPdfExportModal()" class="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold px-4 py-3 rounded-xl shadow-lg shadow-rose-600/25 transition text-sm">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            <span>Xuất PDF Lịch trình</span>
+          </button>
+
           <button onclick="openPhrasebookModal()" class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-amber-600/25 transition text-sm">
             <i data-lucide="languages" class="w-4 h-4"></i>
             <span>Giao tiếp nhanh</span>
@@ -225,6 +279,18 @@
       <button onclick="setFilter('esim')" data-tab="esim" class="tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="smartphone-nfc" class="w-4 h-4 text-purple-400"></i> Quản lý eSIM <span id="esimCountBadge" class="px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 text-xs">0</span>
       </button>
+    </div>
+
+    <!-- THANH LỌC NHANH THEO NGÀY (CHỐNG TRÔI MỎI TAY) -->
+    <div id="dayFilterBarWrapper" class="hidden mb-6 glass rounded-2xl p-3.5 border border-indigo-500/30">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-300">
+          <i data-lucide="calendar-days" class="w-4 h-4 text-indigo-400"></i>
+          <span>Lọc nhanh theo Ngày hành trình</span>
+        </div>
+        <span id="dayFilterSummary" class="text-[11px] text-slate-400">Hiển thị tất cả các ngày</span>
+      </div>
+      <div id="dayFilterPills" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
     </div>
 
     <!-- DANH SÁCH LỊCH TRÌNH HOẶC DANH SÁCH ĐỒ DÙNG -->
@@ -649,6 +715,7 @@
     let items = [];
     let packingItems = [];
     let currentFilter = 'all';
+    let selectedDateFilter = 'all';
     let packingSubFilter = 'all';
     let parsedImportRows = [];
     let customPhrases = [];
@@ -1946,7 +2013,624 @@
         currentUser = data.user;
         localStorage.setItem('travel_token', authToken);
         localStorage.setItem('travel_user', JSON.stringify(currentUser));
-        checkAuthState();
+    
+    // ================= NHÂN BẢN (CLONE) ESIM & HOẠT ĐỘNG =================
+    function openItemModalWithType(type) {
+      openItemModal();
+      document.getElementById('f_type').value = type;
+      if (type === 'esim') {
+        document.getElementById('f_status').value = 'Chưa dùng';
+        const activeTrip = trips.find(t => t.id === currentTripId);
+        const startDay = activeTrip ? String(activeTrip.start_date).slice(0, 10) : '2026-11-19';
+        document.getElementById('f_start').value = `${startDay}T07:00`;
+      }
+      renderDynamicFields();
+    }
+
+    async function cloneItem(id) {
+      const source = items.find(i => i.id === id);
+      if (!source) return;
+
+      const isEsim = source.item_type === 'esim';
+      const clonedDetails = JSON.parse(JSON.stringify(source.details || {}));
+      if (isEsim) {
+        // Xóa ICCID cũ để tránh nhầm lẫn giữa các máy, giữ nguyên gói dung lượng
+        delete clonedDetails.d_iccid;
+      }
+
+      const payload = {
+        trip_id: currentTripId,
+        item_type: source.item_type,
+        provider_or_code: source.provider_or_code || 'Trip.com',
+        title: isEsim ? `${source.title} (Bản sao)` : `${source.title} (Copy)`,
+        start_datetime: normalizeIsoLocal(source.start_datetime),
+        end_datetime: source.end_datetime ? normalizeIsoLocal(source.end_datetime) : null,
+        location_from: source.location_from || '',
+        location_to: source.location_to || '',
+        assigned_to: source.assigned_to || 'Cả gia đình',
+        cost: Number(source.cost || 0),
+        status: isEsim ? 'Chưa dùng' : 'Đã xác nhận',
+        is_done: false,
+        details: clonedDetails,
+        qr_image: null // Không copy ảnh QR cũ để bạn đính kèm QR riêng cho eSIM mới
+      };
+
+      try {
+        const res = await apiFetch('/api/items', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          return alert('Lỗi khi nhân bản: ' + (err.error || res.statusText));
+        }
+        const createdItem = await res.json();
+        await loadTrips();
+        showCopyToast(isEsim ? 'Đã Clone eSIM! Bạn có thể đổi tên người dùng hoặc gắn QR mới.' : 'Đã nhân bản mục lịch trình!');
+        // Mở ngay form chỉnh sửa trên bản sao vừa tạo nếu người dùng muốn sửa người dùng / ICCID
+        openEditItemModal(createdItem.id);
+      } catch (err) {
+        alert('Không thể nhân bản: ' + err.message);
+      }
+    }
+
+    // ================= XUẤT FILE PDF LỊCH TRÌNH CHUYÊN NGHIỆP =================
+    function openPdfExportModal() {
+      if (!currentTripId) return alert('Vui lòng chọn một chuyến du lịch trước khi xuất PDF!');
+      document.getElementById('pdfExportModal').classList.remove('hidden');
+      document.getElementById('pdfExportModal').classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closePdfExportModal() {
+      document.getElementById('pdfExportModal').classList.add('hidden');
+    }
+
+    function escapeHtmlPdf(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function generateProfessionalTripPDF() {
+      const activeTrip = trips.find(t => t.id === currentTripId);
+      if (!activeTrip) return;
+
+      const incItinerary = document.getElementById('pdf_inc_itinerary').checked;
+      const incChinese = document.getElementById('pdf_inc_chinese').checked;
+      const incEsim = document.getElementById('pdf_inc_esim').checked;
+      const incPacking = document.getElementById('pdf_inc_packing').checked;
+      const incCost = document.getElementById('pdf_inc_cost').checked;
+
+      const regularItems = items.filter(i => i.item_type !== 'esim');
+      const esimItems = items.filter(i => i.item_type === 'esim');
+
+      // Group regular items by day
+      const groups = {};
+      regularItems.forEach(item => {
+        const dKey = extractDateKey(item.start_datetime) || 'Khác';
+        if (!groups[dKey]) groups[dKey] = [];
+        groups[dKey].push(item);
+      });
+      const sortedDateKeys = Object.keys(groups).sort();
+
+      const totalItineraryCost = items.reduce((s, i) => s + Number(i.cost || 0), 0);
+      const totalPackingCost = packingItems.reduce((s, p) => s + Number(p.cost || 0), 0);
+      const grandTotalCost = totalItineraryCost + totalPackingCost;
+
+      const typeLabelVi = {
+        flight: '✈️ Chuyến bay',
+        hotel: '🏨 Khách sạn',
+        train: '🚆 Tàu cao tốc / Xe',
+        ticket: '🎟️ Vé tham quan',
+        activity: '🍜 Hoạt động',
+        esim: '📱 eSIM 5G'
+      };
+
+      // Build Day-by-Day HTML
+      let itineraryHtml = '';
+      if (incItinerary && sortedDateKeys.length > 0) {
+        itineraryHtml = `
+          <div class="section-block">
+            <div class="section-title">
+              <span class="sec-num">01</span>
+              <div>
+                <h2>LỊCH TRÌNH CHI TIẾT THEO NGÀY (DAILY ITINERARY)</h2>
+                <p>Tổng hợp toàn bộ giờ khởi hành, khách sạn lưu trú, mã đặt chỗ và địa chỉ giao tiếp</p>
+              </div>
+            </div>
+            ${sortedDateKeys.map((dKey, idx) => {
+              const dayList = [...groups[dKey]].sort((a, b) =>
+                normalizeIsoLocal(a.start_datetime).localeCompare(normalizeIsoLocal(b.start_datetime))
+              );
+              return `
+                <div class="day-card">
+                  <div class="day-header">
+                    <div class="day-badge">NGÀY ${idx + 1}</div>
+                    <div class="day-title">${escapeHtmlPdf(formatVietnameseDayHeader(dKey))}</div>
+                    <div class="day-count">${dayList.length} hạng mục</div>
+                  </div>
+                  <table class="itinerary-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 115px;">Giờ giấc</th>
+                        <th style="width: 120px;">Phân loại / Mã</th>
+                        <th>Chi tiết Hoạt động • Lộ trình • Địa chỉ</th>
+                        <th style="width: 125px;">Thành viên</th>
+                        ${incCost ? '<th style="width: 105px; text-align:right;">Chi phí (₫)</th>' : ''}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${dayList.map(item => {
+                        const sTime = extractTimeHHMM(item.start_datetime) || '--:--';
+                        const eTime = extractTimeHHMM(item.end_datetime);
+                        const d = item.details || {};
+                        const isHotel = item.item_type === 'hotel';
+                        let timeCell = `<strong>${sTime}</strong>${eTime ? `<br><span class="muted">➔ ${eTime}</span>` : ''}`;
+                        let stayBadge = '';
+                        if (isHotel) {
+                          const parsedNights = d.d_nights ? parseInt(String(d.d_nights).replace(/\D/g, ''), 10) : 1;
+                          const nights = calculateHotelNights(item.start_datetime, item.end_datetime, parsedNights);
+                          const outDt = resolveHotelCheckoutDatetime(item.start_datetime, item.end_datetime, nights);
+                          timeCell = `<strong>Nhận: ${sTime}</strong><br><span class="muted">${formatShortDateVN(item.start_datetime)}</span><br><strong style="color:#b45309;">Trả: ${extractTimeHHMM(outDt) || '12:00'}</strong><br><span class="muted">${formatShortDateVN(outDt)}</span>`;
+                          stayBadge = `<span class="pill-amber">🌙 Lưu trú ${nights} đêm</span>`;
+                        }
+
+                        const extraSpecs = Object.entries(d)
+                          .filter(([k, v]) => v && !['d_chinese_name', 'd_chinese_address', 'd_address', 'd_nights'].includes(k))
+                          .map(([_, v]) => `<span class="pill-gray">${escapeHtmlPdf(v)}</span>`)
+                          .join(' ');
+
+                        const zhBox = (incChinese && (d.d_chinese_name || d.d_chinese_address || d.d_address)) ? `
+                          <div class="zh-box">
+                            ${d.d_address ? `<div><strong>📍 Địa chỉ:</strong> ${escapeHtmlPdf(d.d_address)}</div>` : ''}
+                            ${d.d_chinese_name ? `<div class="zh-big">🇨🇳 ${escapeHtmlPdf(d.d_chinese_name)}</div>` : ''}
+                            ${d.d_chinese_address ? `<div class="zh-addr">地址: ${escapeHtmlPdf(d.d_chinese_address)}</div>` : ''}
+                          </div>
+                        ` : '';
+
+                        return `
+                          <tr>
+                            <td class="time-col">${timeCell}</td>
+                            <td>
+                              <div class="type-pill">${typeLabelVi[item.item_type] || 'Hoạt động'}</div>
+                              <div class="code-text">${escapeHtmlPdf(item.provider_or_code || 'N/A')}</div>
+                              <div class="status-text">${escapeHtmlPdf(item.status || '')}</div>
+                            </td>
+                            <td>
+                              <div class="item-main-title">${escapeHtmlPdf(item.title)}</div>
+                              <div class="route-line">
+                                ${escapeHtmlPdf(item.location_from || '')}
+                                ${item.location_to ? ` ➔ <strong>${escapeHtmlPdf(item.location_to)}</strong>` : ''}
+                              </div>
+                              <div class="pills-row">${stayBadge} ${extraSpecs}</div>
+                              ${zhBox}
+                            </td>
+                            <td>${escapeHtmlPdf(item.assigned_to || 'Cả đoàn')}</td>
+                            ${incCost ? `<td style="text-align:right; font-weight:700;">${Number(item.cost || 0).toLocaleString('vi-VN')}</td>` : ''}
+                          </tr>
+                        `;
+                      }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      // Build eSIM HTML
+      let esimHtml = '';
+      if (incEsim && esimItems.length > 0) {
+        esimHtml = `
+          <div class="section-block page-break-avoid">
+            <div class="section-title">
+              <span class="sec-num">02</span>
+              <div>
+                <h2>DANH SÁCH eSIM DU LỊCH & MÃ KÍCH HOẠT (${esimItems.length} GÓI)</h2>
+                <p>Thông tin gói cước dữ liệu 5G và mã QR cài đặt cho từng thành viên</p>
+              </div>
+            </div>
+            <div class="esim-grid">
+              ${esimItems.map(e => {
+                const d = e.details || {};
+                const absQrUrl = e.qr_image ? (e.qr_image.startsWith('http') || e.qr_image.startsWith('data:') ? e.qr_image : window.location.origin + e.qr_image) : '';
+                return `
+                  <div class="esim-card">
+                    <div class="esim-info">
+                      <div class="esim-tag">${escapeHtmlPdf(e.provider_or_code || 'Trip.com')} • ${escapeHtmlPdf(e.status)}</div>
+                      <h4>${escapeHtmlPdf(e.title)}</h4>
+                      <p><strong>👤 Người dùng:</strong> ${escapeHtmlPdf(e.assigned_to)}</p>
+                      <p><strong>📦 Gói cước:</strong> ${escapeHtmlPdf(e.location_to || e.location_from || '5G tốc độ cao')}</p>
+                      ${d.d_iccid ? `<p><strong>🔢 ICCID:</strong> <code>${escapeHtmlPdf(d.d_iccid)}</code></p>` : ''}
+                      ${d.d_activation ? `<p><strong>🔑 Mã/Gói:</strong> ${escapeHtmlPdf(d.d_activation)}</p>` : ''}
+                    </div>
+                    ${absQrUrl ? `<img src="${absQrUrl}" class="esim-qr" alt="QR eSIM" />` : `<div class="esim-no-qr">Chưa đính kèm QR</div>`}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // Build Packing HTML
+      let packingHtml = '';
+      if (incPacking && packingItems.length > 0) {
+        const sortedPk = [...packingItems].sort((a, b) => (PACKING_STATUS_PRIORITY[a.status] || 99) - (PACKING_STATUS_PRIORITY[b.status] || 99));
+        packingHtml = `
+          <div class="section-block">
+            <div class="section-title">
+              <span class="sec-num">03</span>
+              <div>
+                <h2>CHECKLIST HÀNH LÝ & PHÂN BỔ VALI (${sortedPk.length} MỤC)</h2>
+                <p>Kiểm tra đồ dùng Ký gửi / Xách tay trước khi ra sân bay</p>
+              </div>
+            </div>
+            <table class="itinerary-table">
+              <thead>
+                <tr>
+                  <th style="width: 36px; text-align:center;">☑️</th>
+                  <th>Tên đồ dùng / Dụng cụ</th>
+                  <th style="width: 65px; text-align:center;">SL</th>
+                  <th style="width: 115px;">Loại hành lý</th>
+                  <th style="width: 125px;">Vali / Balo</th>
+                  <th style="width: 125px;">Trạng thái</th>
+                  ${incCost ? '<th style="width: 100px; text-align:right;">Chi phí (₫)</th>' : ''}
+                </tr>
+              </thead>
+              <tbody>
+                ${sortedPk.map(p => `
+                  <tr>
+                    <td style="text-align:center; font-size:14px;">${p.status === 'Đã chuẩn bị' ? '☑' : '☐'}</td>
+                    <td>
+                      <strong>${escapeHtmlPdf(p.item_name)}</strong>
+                      ${p.notes ? `<div class="muted" style="margin-top:2px;">📌 ${escapeHtmlPdf(p.notes)}</div>` : ''}
+                    </td>
+                    <td style="text-align:center; font-weight:700;">x${p.quantity || 1}</td>
+                    <td><strong>${escapeHtmlPdf(p.luggage_type)}</strong></td>
+                    <td>${escapeHtmlPdf(p.suitcase_owner)}</td>
+                    <td>${escapeHtmlPdf(p.status)}</td>
+                    ${incCost ? `<td style="text-align:right;">${Number(p.cost || 0).toLocaleString('vi-VN')}</td>` : ''}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      const printWindow = window.open('', '_blank', 'width=1100,height=850');
+      if (!printWindow) {
+        return alert('Trình duyệt đang chặn cửa sổ bật lên (Popup). Vui lòng cho phép Popup để xuất PDF!');
+      }
+
+      const startStr = formatShortDateVN(activeTrip.start_date);
+      const endStr = formatShortDateVN(activeTrip.end_date);
+
+      const fullHtml = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lịch trình - ${escapeHtmlPdf(activeTrip.title)}</title>
+  <style>
+    @page { size: A4 portrait; margin: 12mm 12mm 14mm 12mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      margin: 0;
+      padding: 0;
+      font-size: 11.5px;
+      line-height: 1.45;
+    }
+    .no-print-bar {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #4f46e5;
+    }
+    .no-print-bar button {
+      background: #e11d48;
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .page-wrap { max-width: 960px; margin: 0 auto; padding: 16px; }
+    @media print {
+      .no-print-bar { display: none !important; }
+      .page-wrap { max-width: 100%; padding: 0; }
+    }
+    .cover-banner {
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .brand-tag {
+      display: inline-block;
+      background: rgba(99, 102, 241, 0.25);
+      border: 1px solid rgba(129, 140, 248, 0.5);
+      color: #c7d2fe;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      border-radius: 99px;
+      margin-bottom: 8px;
+    }
+    .cover-banner h1 {
+      margin: 0 0 6px 0;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .cover-meta {
+      color: #cbd5e1;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .cover-notes {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: rgba(245, 158, 11, 0.16);
+      border-left: 3px solid #f59e0b;
+      color: #fde68a;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(${incCost ? 4 : 3}, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .stat-box .lbl { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+    .stat-box .val { font-size: 15px; font-weight: 800; color: #0f172a; margin-top: 2px; }
+    .section-block { margin-bottom: 24px; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 2px solid #0f172a;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+    .sec-num {
+      background: #0f172a;
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 5px 10px;
+      border-radius: 8px;
+    }
+    .section-title h2 { margin: 0; font-size: 15px; font-weight: 800; color: #0f172a; }
+    .section-title p { margin: 1px 0 0 0; font-size: 11px; color: #64748b; }
+    .day-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+    }
+    .day-header {
+      background: #f1f5f9;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .day-badge {
+      background: #4f46e5;
+      color: #fff;
+      font-weight: 800;
+      font-size: 10.5px;
+      padding: 3px 9px;
+      border-radius: 6px;
+    }
+    .day-title { font-weight: 800; font-size: 13px; color: #1e293b; text-transform: capitalize; flex: 1; }
+    .day-count { font-size: 11px; color: #475569; font-weight: 600; }
+    table.itinerary-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table.itinerary-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      text-align: left;
+      padding: 7px 10px;
+      border-bottom: 1px solid #cbd5e1;
+    }
+    table.itinerary-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    table.itinerary-table tr:last-child td { border-bottom: none; }
+    .time-col { font-size: 11.5px; color: #0f172a; }
+    .muted { color: #64748b; font-size: 10.5px; }
+    .type-pill {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 10.5px;
+      color: #1e40af;
+      background: #dbeafe;
+      padding: 2px 7px;
+      border-radius: 5px;
+      margin-bottom: 3px;
+    }
+    .code-text { font-family: monospace; font-size: 10.5px; font-weight: 700; color: #334155; }
+    .status-text { font-size: 10px; color: #059669; font-weight: 600; margin-top: 2px; }
+    .item-main-title { font-weight: 800; font-size: 12.5px; color: #0f172a; margin-bottom: 2px; }
+    .route-line { color: #334155; font-size: 11px; margin-bottom: 4px; }
+    .pills-row { margin: 4px 0; }
+    .pill-amber {
+      display: inline-block;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      color: #92400e;
+      font-weight: 700;
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 99px;
+      margin-right: 4px;
+    }
+    .pill-gray {
+      display: inline-block;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 10px;
+      padding: 1px 7px;
+      border-radius: 5px;
+      margin-right: 4px;
+    }
+    .zh-box {
+      margin-top: 6px;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+    .zh-big { font-size: 13.5px; font-weight: 800; color: #92400e; margin-top: 2px; }
+    .zh-addr { font-size: 11.5px; font-weight: 600; color: #78350f; }
+    .esim-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .esim-card {
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      page-break-inside: avoid;
+    }
+    .esim-card h4 { margin: 4px 0; font-size: 13px; color: #0f172a; }
+    .esim-card p { margin: 2px 0; font-size: 11px; color: #334155; }
+    .esim-tag { font-size: 10px; font-weight: 700; color: #6d28d9; text-transform: uppercase; }
+    .esim-qr { width: 88px; height: 88px; object-fit: contain; border: 1px solid #e2e8f0; border-radius: 8px; padding: 3px; }
+    .esim-no-qr { width: 88px; height: 88px; border: 1px dashed #cbd5e1; border-radius: 8px; display:flex; align-items:center; justify-content:center; font-size:9.5px; color:#94a3b8; text-align:center; padding:4px; }
+    .footer-note {
+      margin-top: 24px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      color: #64748b;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print-bar">
+    <div>
+      <strong>📄 Xem trước Hồ sơ Lịch trình PDF</strong>
+      <span style="font-size:12px; color:#cbd5e1; margin-left:10px;">Trong hộp thoại In, hãy chọn <strong>"Lưu dưới dạng PDF" (Save as PDF)</strong></span>
+    </div>
+    <button onclick="window.print()">🖨️ Lưu thành File PDF / In ngay</button>
+  </div>
+
+  <div class="page-wrap">
+    <div class="cover-banner">
+      <div>
+        <div class="brand-tag">TravelOS • Official Travel Dossier</div>
+        <h1>${escapeHtmlPdf(activeTrip.title)}</h1>
+        <div class="cover-meta">📍 <strong>Điểm đến:</strong> ${escapeHtmlPdf(activeTrip.destination)}</div>
+        <div class="cover-meta">🗓️ <strong>Thời gian:</strong> ${startStr} ➔ ${endStr} (${sortedDateKeys.length} ngày có lịch)</div>
+        <div class="cover-meta">👨‍👩‍👧‍👦 <strong>Thành viên đoàn:</strong> ${escapeHtmlPdf(activeTrip.members || 'Cả gia đình')}</div>
+        ${activeTrip.notes ? `<div class="cover-notes">📌 <strong>Lưu ý quan trọng:</strong> ${escapeHtmlPdf(activeTrip.notes)}</div>` : ''}
+      </div>
+      <div style="text-align:right; shrink:0;">
+        <div style="font-size:10px; text-transform:uppercase; color:#a5b4fc; font-weight:700;">Ngày xuất hồ sơ</div>
+        <div style="font-size:13px; font-weight:700;">${new Date().toLocaleDateString('vi-VN')}</div>
+        ${incCost ? `
+          <div style="margin-top:14px; background:rgba(16,185,129,0.18); border:1px solid rgba(52,211,153,0.4); padding:8px 14px; border-radius:10px;">
+            <div style="font-size:10px; color:#a7f3d0; text-transform:uppercase;">Tổng chi phí dự kiến</div>
+            <div style="font-size:18px; font-weight:900; color:#34d399;">${grandTotalCost.toLocaleString('vi-VN')} ₫</div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+
+    <div class="summary-stats">
+      <div class="stat-box">
+        <div class="lbl">Số ngày lịch trình</div>
+        <div class="val">${sortedDateKeys.length} Ngày</div>
+      </div>
+      <div class="stat-box">
+        <div class="lbl">Tổng hạng mục & Vé</div>
+        <div class="val">${regularItems.length} Hoạt động • ${esimItems.length} eSIM</div>
+      </div>
+      <div class="stat-box">
+        <div class="lbl">Hành lý chuẩn bị</div>
+        <div class="val">${packingItems.length} Món đồ dùng</div>
+      </div>
+      ${incCost ? `
+        <div class="stat-box">
+          <div class="lbl">Vé & KS / Đồ dùng</div>
+          <div class="val" style="font-size:12.5px;">${totalItineraryCost.toLocaleString('vi-VN')} ₫ + ${totalPackingCost.toLocaleString('vi-VN')} ₫</div>
+        </div>
+      ` : ''}
+    </div>
+
+    ${itineraryHtml}
+    ${esimHtml}
+    ${packingHtml}
+
+    <div class="footer-note">
+      <span>Hệ thống Quản lý Hành trình & Giao tiếp Du lịch TravelOS</span>
+      <span>Chuyến đi: ${escapeHtmlPdf(activeTrip.title)} (${startStr} - ${endStr})</span>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 450);
+    };
+  <\/script>
+</body>
+</html>`;
+
+      printWindow.document.open();
+      printWindow.document.write(fullHtml);
+      printWindow.document.close();
+      closePdfExportModal();
+    }
+
+    checkAuthState();
       } catch (err) {
         errBox.innerText = 'Không thể kết nối tới máy chủ!';
         errBox.classList.remove('hidden');
@@ -2060,6 +2744,7 @@
 
     async function selectTrip(id) {
       currentTripId = id;
+      selectedDateFilter = 'all';
       packingSubFilter = 'all';
       renderTrips();
       await Promise.all([loadItems(id), loadPackingItems(id)]);
@@ -2164,10 +2849,74 @@
       renderTimeline();
     }
 
+    function setDateFilter(dateKey) {
+      selectedDateFilter = dateKey;
+      renderTimeline();
+    }
+
+    function renderDayFilterBar(allDatesMap) {
+      const wrapper = document.getElementById('dayFilterBarWrapper');
+      const pillsBox = document.getElementById('dayFilterPills');
+      const summaryTxt = document.getElementById('dayFilterSummary');
+      if (!wrapper || !pillsBox) return;
+
+      const sortedDates = Object.keys(allDatesMap).sort();
+      if (currentFilter === 'packing' || currentFilter === 'esim' || sortedDates.length === 0) {
+        wrapper.classList.add('hidden');
+        return;
+      }
+
+      wrapper.classList.remove('hidden');
+
+      if (selectedDateFilter !== 'all' && !allDatesMap[selectedDateFilter]) {
+        selectedDateFilter = 'all';
+      }
+
+      const totalItemsCount = sortedDates.reduce((acc, d) => acc + allDatesMap[d].length, 0);
+      if (selectedDateFilter === 'all') {
+        summaryTxt.innerText = `Đang hiển thị tất cả ${sortedDates.length} ngày (${totalItemsCount} hoạt động)`;
+      } else {
+        const dayIdx = sortedDates.indexOf(selectedDateFilter) + 1;
+        summaryTxt.innerText = `Đang lọc riêng Ngày ${dayIdx}: ${formatVietnameseDayHeader(selectedDateFilter)} (${allDatesMap[selectedDateFilter].length} hoạt động)`;
+      }
+
+      const allBtnClass = selectedDateFilter === 'all'
+        ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/25 font-bold'
+        : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800 font-medium';
+
+      let html = `
+        <button onclick="setDateFilter('all')" class="px-3.5 py-2 rounded-xl text-xs border transition shrink-0 flex items-center gap-1.5 ${allBtnClass}">
+          <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+          <span>Tất cả (${sortedDates.length} ngày)</span>
+        </button>
+      `;
+
+      sortedDates.forEach((dKey, idx) => {
+        const count = allDatesMap[dKey].length;
+        const [y, m, d] = dKey.split('-');
+        const shortDate = (d && m) ? `${d}/${m}` : dKey;
+        const isActive = selectedDateFilter === dKey;
+        const btnClass = isActive
+          ? 'bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-600/25 font-bold'
+          : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800 font-medium';
+
+        html += `
+          <button onclick="setDateFilter('${dKey}')" class="px-3.5 py-2 rounded-xl text-xs border transition shrink-0 flex items-center gap-1.5 ${btnClass}">
+            <span>Ngày ${idx + 1} (${shortDate})</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] ${isActive ? 'bg-white/25 text-white' : 'bg-slate-800 text-indigo-300'}">${count}</span>
+          </button>
+        `;
+      });
+
+      pillsBox.innerHTML = html;
+    }
+
     function renderTimeline() {
       const container = document.getElementById('timelineContainer');
+      const dayBarWrapper = document.getElementById('dayFilterBarWrapper');
 
       if (currentFilter === 'packing') {
+        if (dayBarWrapper) dayBarWrapper.classList.add('hidden');
         renderPackingTab(container);
         return;
       }
@@ -2180,16 +2929,27 @@
       }
 
       if (filtered.length === 0) {
+        if (dayBarWrapper) dayBarWrapper.classList.add('hidden');
         container.innerHTML = `<div class="glass rounded-2xl p-12 text-center text-slate-400">Chưa có mục nào trong tab này. Bấm "Upload Trip.com (.xlsx)" hoặc "Thêm lịch trình" để bắt đầu!</div>`;
         return;
       }
 
       if (currentFilter === 'esim') {
+        if (dayBarWrapper) dayBarWrapper.classList.add('hidden');
         filtered.sort((a, b) => Number(Boolean(a.is_done)) - Number(Boolean(b.is_done)));
         container.innerHTML = `
           <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 class="font-bold text-sm uppercase tracking-wider text-purple-400">Quản lý eSIM Du lịch (Bấm "Đính kèm QR" để lưu mã QR kích hoạt lên Server)</h3>
+            <div class="glass rounded-2xl p-4 border border-purple-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 class="font-bold text-sm uppercase tracking-wider text-purple-300 flex items-center gap-2">
+                  <i data-lucide="smartphone-nfc" class="w-4 h-4 text-purple-400"></i>
+                  <span>Quản lý eSIM Du lịch (${filtered.length} gói)</span>
+                </h3>
+                <p class="text-xs text-slate-400 mt-0.5">Bấm <strong class="text-purple-300">"Nhân bản (Clone) eSIM"</strong> trên thẻ bất kỳ để tạo nhanh eSIM cùng gói cho thành viên khác.</p>
+              </div>
+              <button onclick="openItemModalWithType('esim')" class="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 shrink-0 shadow-lg shadow-purple-600/25 transition">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> + Thêm eSIM mới
+              </button>
             </div>
             <div class="grid gap-3">
               ${filtered.map(item => renderCard(item)).join('')}
@@ -2207,9 +2967,15 @@
         groups[dateKey].push(item);
       });
 
-      const sortedDateKeys = Object.keys(groups).sort();
+      renderDayFilterBar(groups);
 
-      container.innerHTML = sortedDateKeys.map(dateKey => {
+      const allSortedDateKeys = Object.keys(groups).sort();
+      const visibleDateKeys = selectedDateFilter === 'all'
+        ? allSortedDateKeys
+        : allSortedDateKeys.filter(k => k === selectedDateFilter);
+
+      container.innerHTML = visibleDateKeys.map(dateKey => {
+        const dayIndex = allSortedDateKeys.indexOf(dateKey) + 1;
         const dayItems = groups[dateKey];
         dayItems.sort((a, b) => {
           if (Boolean(a.is_done) !== Boolean(b.is_done)) {
@@ -2220,9 +2986,12 @@
 
         return `
           <div class="space-y-3">
-            <div class="sticky top-0 z-10 py-2 bg-slate-950/90 backdrop-blur flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-              <h3 class="font-bold text-sm uppercase tracking-wider text-indigo-400">${formatVietnameseDayHeader(dateKey)}</h3>
+            <div class="sticky top-0 z-10 py-2.5 px-3 rounded-xl bg-slate-950/95 border border-slate-800/80 backdrop-blur flex items-center justify-between gap-2 shadow">
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-xs font-bold">NGÀY ${dayIndex}</span>
+                <h3 class="font-bold text-sm uppercase tracking-wider text-indigo-300">${formatVietnameseDayHeader(dateKey)}</h3>
+              </div>
+              <span class="text-xs text-slate-400 font-medium">${dayItems.length} hoạt động</span>
             </div>
             <div class="grid gap-3">
               ${dayItems.map(item => renderCard(item)).join('')}
@@ -2377,6 +3146,9 @@
                 </button>
               `}
 
+              <button onclick="cloneItem(${item.id})" class="px-2.5 py-1.5 rounded-lg ${isEsim ? 'bg-purple-500/20 border border-purple-500/40 text-purple-200 hover:bg-purple-600 hover:text-white font-semibold' : 'bg-slate-800 hover:bg-indigo-600/20 text-slate-300 hover:text-indigo-300'} text-xs flex items-center gap-1 transition" title="${isEsim ? 'Nhân bản nhanh eSIM này cho máy khác' : 'Nhân bản hoạt động này'}">
+                <i data-lucide="copy-plus" class="w-3.5 h-3.5"></i> ${isEsim ? 'Clone eSIM' : 'Nhân bản'}
+              </button>
               <button onclick="openEditItemModal(${item.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-600/20 text-slate-300 hover:text-sky-400 text-xs flex items-center gap-1 transition">
                 <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Sửa
               </button>
