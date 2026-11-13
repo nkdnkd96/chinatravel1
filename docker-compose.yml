@@ -28,21 +28,12 @@ services:
     environment:
       DATABASE_URL: postgres://travel_user:travel_secret_password_2026@db:5432/travel_db
       JWT_SECRET: travel_os_super_secret_jwt_key_2026
-      PORT: 4000
     volumes:
       - ./frontend:/app/frontend:ro
+      - ./certs:/app/certs:ro
     ports:
-      - "4000:4000"
-    networks:
-      - travel-net
-
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    container_name: travel-tunnel
-    restart: always
-    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
-    depends_on:
-      - backend
+      - "80:80"
+      - "443:443"
     networks:
       - travel-net
 
