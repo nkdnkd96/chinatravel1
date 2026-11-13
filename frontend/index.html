@@ -173,19 +173,13 @@
             <span id="currentTotalCost" class="text-lg font-bold text-emerald-400">0 ₫</span>
           </div>
 
-          <button onclick="openPhrasebookModal()" class="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-amber-600/25 transition text-sm">
-            <i data-lucide="languages" class="w-4 h-4"></i>
-            <span>Giao tiếp nhanh</span>
-          </button>
-
-          <!-- Hai nút thêm lịch trình sẽ tự động ẩn đi khi người dùng chuyển sang tab Đồ dùng & Hành lý để đỡ loạn -->
+          <!-- Các nút thao tác sẽ được quản lý ẩn/hiện tùy Tab -->
           <div id="itineraryHeaderActions" class="flex flex-wrap items-center gap-2.5">
             <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)" />
             <button onclick="triggerExcelUpload()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-emerald-600/25 transition text-sm">
               <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
               <span>Upload Trip.com (.xlsx)</span>
             </button>
-
             <button onclick="openItemModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-indigo-600/25 transition text-sm">
               <i data-lucide="plus-circle" class="w-4 h-4"></i>
               <span>Thêm lịch trình</span>
@@ -195,13 +189,12 @@
       </div>
     </div>
 
-    <!-- THANH BỘ LỌC TÍNH NĂNG (ĐƯA TAB ĐỒ DÙNG & HÀNH LÝ LÊN VỊ TRÍ SỐ 2 ĐỂ DỄ THẤY NGAY LẬP TỨC) -->
-    <div class="flex flex-wrap items-center gap-2 pb-3 mb-6">
+    <!-- THANH BỘ LỌC TÍNH NĂNG -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6">
       <button onclick="setFilter('all')" data-tab="all" class="tab-btn bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="calendar-clock" class="w-4 h-4"></i> Tất cả Lịch trình
       </button>
 
-      <!-- TAB ĐỒ DÙNG & HÀNH LÝ NẰM NGAY VỊ TRÍ SỐ 2 -->
       <button onclick="setFilter('packing')" data-tab="packing" class="tab-btn bg-slate-900 hover:bg-slate-800 text-orange-300 border border-orange-500/40 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shrink-0">
         <i data-lucide="luggage" class="w-4 h-4 text-orange-400"></i> Đồ dùng & Hành lý <span id="packingCountBadge" class="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 text-xs">0</span>
       </button>
@@ -226,9 +219,7 @@
       </button>
     </div>
 
-    <!-- DANH SÁCH LỊCH TRÌNH HOẶC DANH SÁCH ĐỒ DÙNG -->
     <div id="timelineContainer" class="space-y-8"></div>
-
   </main>
 
   <!-- MODAL THÊM / SỬA ĐỒ DÙNG & DỤNG CỤ CẦN CHUẨN BỊ (PACKING ITEM MODAL) -->
@@ -246,7 +237,7 @@
         <div class="grid grid-cols-3 gap-3">
           <div class="col-span-2">
             <label class="block text-slate-400 mb-1">Tên đồ dùng / Dụng cụ</label>
-            <input id="pk_name" required placeholder="VD: Áo phao giữ nhiệt, Bình oxy cầm tay, Sạc dự phòng..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+            <input id="pk_name" required placeholder="VD: Áo phao giữ nhiệt, Bình oxy cầm tay..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
           </div>
           <div>
             <label class="block text-slate-400 mb-1">Số lượng</label>
@@ -277,7 +268,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-slate-400 mb-1">Để trong Vali / Balo của ai?</label>
-            <input id="pk_owner" list="suitcaseOwnersList" required value="Vali chung" placeholder="VD: Vali của Quỳnh, Vali của Dương..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
+            <input id="pk_owner" list="suitcaseOwnersList" required value="Vali chung" placeholder="VD: Vali của Quỳnh..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-white" />
             <datalist id="suitcaseOwnersList">
               <option value="Vali chung"></option>
               <option value="Vali Quỳnh"></option>
@@ -421,7 +412,7 @@
     </div>
   </div>
 
-  <!-- MODAL THÊM / SỬA HOẠT ĐỘNG THỦ CÔNG -->
+  <!-- MODAL THÊM / SỬA HOẠT ĐỘNG LỊCH TRÌNH THỦ CÔNG -->
   <div id="itemModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4 z-40">
     <div class="glass bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 max-h-[92vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
@@ -617,15 +608,6 @@
     </div>
   </div>
 
-  <!-- MODAL XEM NHANH MÃ QR -->
-  <div id="qrModal" onclick="this.classList.add('hidden')" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-50">
-    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-sm w-full text-center space-y-3" onclick="event.stopPropagation()">
-      <h4 id="qrModalTitle" class="font-bold text-white">Mã QR / Voucher</h4>
-      <img id="qrModalImg" src="" alt="QR Voucher" class="w-full rounded-xl bg-white p-3 mx-auto max-h-80 object-contain" />
-      <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">Đóng</button>
-    </div>
-  </div>
-
   <script>
     let authToken = localStorage.getItem('travel_token') || null;
     let currentUser = JSON.parse(localStorage.getItem('travel_user') || 'null');
@@ -649,8 +631,6 @@
       activity: { icon: 'utensils', label: 'Hoạt động', badge: 'bg-teal-500/15 text-teal-400 border-teal-500/30' }
     };
 
-    // THỨ TỰ ƯU TIÊN SẮP XẾP ĐỒ DÙNG:
-    // 1. Chưa có (Ưu tiên cao nhất lên đầu) -> 2. Đã có -> 3. Đã chuẩn bị -> 4. Sang đó rồi mua
     const PACKING_STATUS_PRIORITY = {
       'Chưa có': 1,
       'Đã có': 2,
@@ -659,7 +639,7 @@
     };
 
     const PACKING_STATUS_STYLE = {
-      'Chưa có': { badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40', label: '🔴 Chưa có (Ưu tiên 1)' },
+      'Chưa có': { badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40', label: '🔴 Chưa có (Ưu tiên mua)' },
       'Đã có': { badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40', label: '🟡 Đã có (Chưa vào vali)' },
       'Đã chuẩn bị': { badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', label: '🟢 Đã chuẩn bị (Đã vào vali)' },
       'Sang đó rồi mua': { badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40', label: '🟣 Sang đó rồi mua' }
@@ -1235,7 +1215,6 @@
       await loadTrips();
     }
 
-    // Nút tạo nhanh bộ đồ dùng gợi ý mẫu 1-chạm để bạn dễ hình dung và chỉnh sửa
     async function seedSamplePackingItems() {
       if (!currentTripId) return;
       const samples = [
@@ -1278,7 +1257,6 @@
     }
 
     function renderPackingTab(container) {
-      // Sắp xếp ưu tiên đúng yêu cầu: 1. Chưa có -> 2. Đã có -> 3. Đã chuẩn bị -> 4. Sang đó rồi mua
       const sorted = [...packingItems].sort((a, b) => {
         const pa = PACKING_STATUS_PRIORITY[a.status] || 99;
         const pb = PACKING_STATUS_PRIORITY[b.status] || 99;
@@ -1304,7 +1282,6 @@
 
       container.innerHTML = `
         <div class="space-y-6">
-          <!-- KHUNG ĐIỀU KHIỂN & NÚT THÊM ĐỒ DÙNG RIÊNG BIỆT TRONG TAB -->
           <div class="glass rounded-2xl p-5 border border-orange-500/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1">
               <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -1333,7 +1310,6 @@
             </div>
           </div>
 
-          <!-- THỐNG KÊ NHANH 4 TRẠNG THÁI THEO ĐÚNG THỨ TỰ ƯU TIÊN -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between">
               <div>
@@ -1365,7 +1341,6 @@
             </div>
           </div>
 
-          <!-- BỘ LỌC NHANH THEO KÝ GỬI / XÁCH TAY & VALI CỦA AI -->
           <div class="flex items-center gap-2 overflow-x-auto pb-1">
             <button onclick="setPackingSubFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${packingSubFilter === 'all' ? 'bg-orange-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'}">
               Tất cả (${sorted.length})
@@ -1386,7 +1361,6 @@
             `).join('')}
           </div>
 
-          <!-- DANH SÁCH CHI TIẾT ĐỒ DÙNG -->
           ${filteredList.length === 0 ? `
             <div class="glass rounded-2xl p-12 text-center space-y-4">
               <p class="text-slate-300 text-sm">Chưa có món đồ dùng nào trong danh sách của chuyến đi này.</p>
@@ -1824,7 +1798,7 @@
       document.getElementById('importPreviewModal').classList.add('hidden');
     }
 
-    // ================= XÁC THỰC (AUTH) =================
+    // ================= KHỞI CHẠY (AUTH) =================
     async function handleLogin(e) {
       e.preventDefault();
       const errBox = document.getElementById('loginError');
@@ -1904,601 +1878,6 @@
         setTimeout(() => closePasswordModal(), 1200);
       }
     }
-
-    // ================= QUẢN LÝ CHUYẾN ĐI (TRIPS CRUD) =================
-    async function loadTrips() {
-      const res = await apiFetch('/api/trips');
-      trips = await res.json();
-      if (trips.length > 0 && (!currentTripId || !trips.some(t => t.id === currentTripId))) {
-        currentTripId = trips[0].id;
-      } else if (trips.length === 0) {
-        currentTripId = null;
-      }
-      renderTrips();
-      if (currentTripId) {
-        await Promise.all([loadItems(currentTripId), loadPackingItems(currentTripId)]);
-      } else {
-        document.getElementById('timelineContainer').innerHTML = `<div class="glass rounded-2xl p-12 text-center text-slate-400">Hãy tạo chuyến du lịch đầu tiên của bạn ở menu bên trái!</div>`;
-        refreshWeatherForActiveTrip();
-      }
-    }
-
-    function renderTrips() {
-      const list = document.getElementById('tripList');
-      list.innerHTML = trips.map(t => `
-        <div onclick="selectTrip(${t.id})" class="group cursor-pointer p-3.5 rounded-xl border transition ${t.id === currentTripId ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-900/60 border-slate-800/80 text-slate-300 hover:bg-slate-800/60'}">
-          <div class="flex items-center justify-between gap-2">
-            <span class="font-semibold text-sm truncate">${t.title}</span>
-            <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100">
-              <button onclick="event.stopPropagation(); openEditTripModal(${t.id})" class="p-1 hover:text-sky-400" title="Sửa"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-              <button onclick="event.stopPropagation(); deleteTripById(${t.id})" class="p-1 hover:text-rose-400" title="Xóa"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-            </div>
-          </div>
-          <div class="text-xs text-slate-400 flex justify-between mt-1">
-            <span>${String(t.start_date).slice(0, 10)}</span>
-            <span>${t.item_count} lịch trình • ${t.packing_count || 0} đồ dùng</span>
-          </div>
-        </div>
-      `).join('');
-
-      const active = trips.find(t => t.id === currentTripId);
-      if (active) {
-        document.getElementById('tripActionBtns').classList.remove('hidden');
-        document.getElementById('currentDestination').innerText = active.destination;
-        document.getElementById('currentTripTitle').innerText = active.title;
-        document.getElementById('currentTripMeta').innerText = `🗓️ ${String(active.start_date).slice(0, 10)} ➔ ${String(active.end_date).slice(0, 10)}  •  👨‍👩‍👧‍👦 ${active.members || 'Cả đoàn'}`;
-        document.getElementById('currentTripNotes').innerText = active.notes ? `📌 Lưu ý: ${active.notes}` : '';
-        document.getElementById('currentTotalCost').innerText = Number(active.total_cost || 0).toLocaleString('vi-VN') + ' ₫';
-      } else {
-        document.getElementById('tripActionBtns').classList.add('hidden');
-        document.getElementById('currentDestination').innerText = 'Chưa có chuyến đi';
-        document.getElementById('currentTripTitle').innerText = 'Bấm nút (+) để tạo chuyến đi mới';
-        document.getElementById('currentTripMeta').innerText = '';
-        document.getElementById('currentTripNotes').innerText = '';
-        document.getElementById('currentTotalCost').innerText = '0 ₫';
-      }
-      lucide.createIcons();
-    }
-
-    async function selectTrip(id) {
-      currentTripId = id;
-      packingSubFilter = 'all';
-      renderTrips();
-      await Promise.all([loadItems(id), loadPackingItems(id)]);
-    }
-
-    function openTripModal() {
-      document.getElementById('tripForm').reset();
-      document.getElementById('t_id').value = '';
-      document.getElementById('tripModalTitle').innerText = 'Tạo Chuyến Du Lịch Mới';
-      document.getElementById('tripModal').classList.remove('hidden');
-      document.getElementById('tripModal').classList.add('flex');
-    }
-
-    function openEditTripModal(id = currentTripId) {
-      const trip = trips.find(t => t.id === id);
-      if (!trip) return;
-      document.getElementById('t_id').value = trip.id;
-      document.getElementById('t_title').value = trip.title;
-      document.getElementById('t_dest').value = trip.destination;
-      document.getElementById('t_start').value = String(trip.start_date).slice(0, 10);
-      document.getElementById('t_end').value = String(trip.end_date).slice(0, 10);
-      document.getElementById('t_members').value = trip.members || '';
-      document.getElementById('t_notes').value = trip.notes || '';
-      document.getElementById('tripModalTitle').innerText = 'Chỉnh Sửa Chuyến Du Lịch';
-      document.getElementById('tripModal').classList.remove('hidden');
-      document.getElementById('tripModal').classList.add('flex');
-    }
-
-    async function submitTrip(e) {
-      e.preventDefault();
-      const editId = document.getElementById('t_id').value;
-      const payload = {
-        title: document.getElementById('t_title').value,
-        destination: document.getElementById('t_dest').value,
-        start_date: document.getElementById('t_start').value,
-        end_date: document.getElementById('t_end').value,
-        members: document.getElementById('t_members').value,
-        notes: document.getElementById('t_notes').value
-      };
-
-      if (editId) {
-        await apiFetch(`/api/trips/${editId}`, { method: 'PUT', body: JSON.stringify(payload) });
-      } else {
-        const res = await apiFetch('/api/trips', { method: 'POST', body: JSON.stringify(payload) });
-        const newTrip = await res.json();
-        currentTripId = newTrip.id;
-      }
-      closeTripModal();
-      loadTrips();
-    }
-
-    async function deleteTripById(id) {
-      const trip = trips.find(t => t.id === id);
-      if (!confirm(`Bạn có chắc muốn xóa chuyến đi "${trip ? trip.title : ''}" và toàn bộ vé/lịch trình bên trong?`)) return;
-      await apiFetch(`/api/trips/${id}`, { method: 'DELETE' });
-      if (currentTripId === id) currentTripId = null;
-      loadTrips();
-    }
-
-    function deleteCurrentTrip() {
-      if (currentTripId) deleteTripById(currentTripId);
-    }
-
-    // ================= QUẢN LÝ HOẠT ĐỘNG & VÉ =================
-    async function loadItems(tripId) {
-      const res = await apiFetch(`/api/trips/${tripId}/items`);
-      items = await res.json();
-
-      const esimItems = items.filter(i => i.item_type === 'esim');
-      const unusedEsims = esimItems.filter(i => !i.is_done).length;
-      const badge = document.getElementById('esimCountBadge');
-      if (badge) badge.innerText = `${unusedEsims}/${esimItems.length}`;
-
-      renderTimeline();
-      refreshWeatherForActiveTrip();
-    }
-
-    async function toggleItemDone(id) {
-      await apiFetch(`/api/items/${id}/toggle-done`, { method: 'PATCH' });
-      loadItems(currentTripId);
-    }
-
-    function setFilter(filter) {
-      currentFilter = filter;
-      const headerActions = document.getElementById('itineraryHeaderActions');
-      if (headerActions) {
-        if (filter === 'packing') headerActions.classList.add('hidden');
-        else headerActions.classList.remove('hidden');
-      }
-
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        if (btn.dataset.tab === filter) {
-          btn.className = filter === 'packing'
-            ? 'tab-btn bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shrink-0 shadow-lg shadow-orange-600/25'
-            : 'tab-btn bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
-        } else {
-          btn.className = btn.dataset.tab === 'packing'
-            ? 'tab-btn bg-slate-900 hover:bg-slate-800 text-orange-300 border border-orange-500/40 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shrink-0'
-            : 'tab-btn bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 px-3.5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0';
-        }
-      });
-      renderTimeline();
-    }
-
-    function renderTimeline() {
-      const container = document.getElementById('timelineContainer');
-
-      if (currentFilter === 'packing') {
-        renderPackingTab(container);
-        return;
-      }
-
-      let filtered = [];
-      if (currentFilter === 'all') {
-        filtered = items.filter(i => i.item_type !== 'esim');
-      } else {
-        filtered = items.filter(i => i.item_type === currentFilter);
-      }
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="glass rounded-2xl p-12 text-center text-slate-400">Chưa có mục nào trong tab này. Bấm "Upload Trip.com (.xlsx)" hoặc "Thêm lịch trình" để bắt đầu!</div>`;
-        return;
-      }
-
-      if (currentFilter === 'esim') {
-        filtered.sort((a, b) => Number(Boolean(a.is_done)) - Number(Boolean(b.is_done)));
-        container.innerHTML = `
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <h3 class="font-bold text-sm uppercase tracking-wider text-purple-400">Quản lý eSIM Du lịch (eSIM đã dùng tự động xếp xuống cuối & làm mờ)</h3>
-            </div>
-            <div class="grid gap-3">
-              ${filtered.map(item => renderCard(item)).join('')}
-            </div>
-          </div>
-        `;
-        lucide.createIcons();
-        return;
-      }
-
-      const groups = {};
-      filtered.forEach(item => {
-        const dateKey = extractDateKey(item.start_datetime);
-        if (!groups[dateKey]) groups[dateKey] = [];
-        groups[dateKey].push(item);
-      });
-
-      const sortedDateKeys = Object.keys(groups).sort();
-
-      container.innerHTML = sortedDateKeys.map(dateKey => {
-        const dayItems = groups[dateKey];
-        dayItems.sort((a, b) => {
-          if (Boolean(a.is_done) !== Boolean(b.is_done)) {
-            return Number(Boolean(a.is_done)) - Number(Boolean(b.is_done));
-          }
-          return normalizeIsoLocal(a.start_datetime).localeCompare(normalizeIsoLocal(b.start_datetime));
-        });
-
-        return `
-          <div class="space-y-3">
-            <div class="sticky top-0 z-10 py-2 bg-slate-950/90 backdrop-blur flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-              <h3 class="font-bold text-sm uppercase tracking-wider text-indigo-400">${formatVietnameseDayHeader(dateKey)}</h3>
-            </div>
-            <div class="grid gap-3">
-              ${dayItems.map(item => renderCard(item)).join('')}
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      lucide.createIcons();
-    }
-
-    function renderCard(item) {
-      const cfg = typeConfig[item.item_type] || typeConfig.activity;
-      const startTime = extractTimeHHMM(item.start_datetime);
-      const endTime = extractTimeHHMM(item.end_datetime);
-      const d = item.details || {};
-      const isDone = Boolean(item.is_done);
-      const isEsim = item.item_type === 'esim';
-      const isHotel = item.item_type === 'hotel';
-
-      const zhName = d.d_chinese_name || '';
-      const zhAddr = d.d_chinese_address || '';
-      const viAddr = d.d_address || '';
-
-      let hotelStayBanner = '';
-      if (isHotel) {
-        const parsedExplicitNights = d.d_nights ? parseInt(String(d.d_nights).replace(/\D/g, ''), 10) : 1;
-        const nights = calculateHotelNights(item.start_datetime, item.end_datetime, parsedExplicitNights);
-        const resolvedCheckoutDt = resolveHotelCheckoutDatetime(item.start_datetime, item.end_datetime, nights);
-        const checkinDateStr = formatShortDateVN(item.start_datetime);
-        const checkinTimeStr = startTime || '14:00';
-        const checkoutDateStr = formatShortDateVN(resolvedCheckoutDt);
-        const checkoutTimeStr = extractTimeHHMM(resolvedCheckoutDt) || '12:00';
-
-        hotelStayBanner = `
-          <div class="mt-1.5 p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 flex flex-wrap items-center gap-3 text-xs">
-            <div class="flex items-center gap-1.5 text-slate-200">
-              <i data-lucide="log-in" class="w-3.5 h-3.5 text-emerald-400"></i>
-              <span>Nhận phòng: <strong class="text-white">${checkinDateStr} (${checkinTimeStr})</strong></span>
-            </div>
-            <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-500"></i>
-            <div class="flex items-center gap-1.5 text-slate-200">
-              <i data-lucide="log-out" class="w-3.5 h-3.5 text-rose-400"></i>
-              <span>Trả phòng: <strong class="text-white">${checkoutDateStr} (${checkoutTimeStr})</strong></span>
-            </div>
-            <span class="px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold flex items-center gap-1 ml-auto">
-              🌙 Lưu trú: ${nights} đêm
-            </span>
-          </div>
-        `;
-      }
-
-      const otherBadges = Object.entries(d)
-        .filter(([k, v]) => v && !['d_chinese_name', 'd_chinese_address', 'd_address', 'd_nights'].includes(k))
-        .map(([_, v]) => `<span class="px-2.5 py-1 rounded-md bg-slate-800/90 text-slate-300 text-xs">${v}</span>`)
-        .join('');
-
-      const safeTitle = (item.title || '').replace(/'/g, "\\'");
-      const safeZhName = zhName.replace(/'/g, "\\'");
-      const safeZhAddr = zhAddr.replace(/'/g, "\\'");
-
-      const doneBtnLabel = isEsim
-        ? (isDone ? 'Đã dùng eSIM' : 'Đánh dấu Đã dùng')
-        : (isDone ? 'Đã xong' : 'Đánh dấu Xong');
-
-      return `
-        <div class="glass rounded-2xl p-5 transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDone ? 'opacity-40 bg-slate-950/40 border-slate-800/40' : 'hover:border-slate-700'}">
-          <div class="flex items-start gap-4 flex-1">
-            <div class="text-center min-w-[68px] pt-1">
-              ${isEsim ? `
-                <span class="text-xs font-bold uppercase px-2 py-1 rounded bg-purple-500/20 text-purple-300 block">eSIM</span>
-              ` : isHotel ? `
-                <span class="text-lg font-bold ${isDone ? 'line-through text-slate-500' : 'text-amber-400'} block">${startTime || '14:00'}</span>
-                <span class="text-[11px] text-amber-300/80 font-medium block">Check-in</span>
-              ` : `
-                <span class="text-lg font-bold ${isDone ? 'line-through text-slate-500' : 'text-white'} block">${startTime || '--:--'}</span>
-                ${endTime ? `<span class="text-xs text-emerald-400 font-medium">➔ ${endTime}</span>` : ''}
-              `}
-            </div>
-            <div class="space-y-1.5 flex-1">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border flex items-center gap-1.5 ${cfg.badge}">
-                  <i data-lucide="${cfg.icon}" class="w-3.5 h-3.5"></i> ${cfg.label}
-                </span>
-                <span class="px-2.5 py-0.5 rounded-md bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 font-mono text-xs font-semibold">
-                  ${item.provider_or_code || 'N/A'}
-                </span>
-                <span class="text-xs px-2 py-0.5 rounded ${isDone ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/15 text-emerald-400 font-medium'}">
-                  ${isDone ? (isEsim ? '✓ eSIM Đã dùng' : '✓ Đã hoàn thành') : item.status}
-                </span>
-              </div>
-
-              <h4 class="text-base font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'}">${item.title}</h4>
-
-              ${hotelStayBanner}
-
-              <p class="text-sm text-slate-300 flex flex-wrap items-center gap-2">
-                <span>${item.location_from || ''}</span>
-                ${item.location_to ? `<i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span>${item.location_to}</span>` : ''}
-              </p>
-
-              ${(viAddr || zhName || zhAddr) ? `
-                <div class="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
-                  ${viAddr ? `<div class="text-xs text-slate-200 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i> <span><strong>Địa chỉ:</strong> ${viAddr}</span></div>` : ''}
-                  ${zhName ? `<div class="text-sm font-bold text-amber-300">🇨🇳 ${zhName}</div>` : ''}
-                  ${zhAddr ? `<div class="text-xs text-amber-200/90">📍 地址: ${zhAddr}</div>` : ''}
-                  ${(zhName || zhAddr) ? `
-                    <div class="flex flex-wrap items-center gap-2 pt-1">
-                      ${zhName ? `
-                        <button onclick="copyToClipboard('${safeZhName}', 'Tên Tiếng Trung')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1 transition shadow">
-                          <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Tên Trung (Tìm Map)
-                        </button>
-                      ` : ''}
-                      ${zhAddr ? `
-                        <button onclick="copyToClipboard('${safeZhAddr}', 'Địa chỉ Tiếng Trung')" class="px-2.5 py-1 rounded-lg bg-sky-600/30 border border-sky-500/40 hover:bg-sky-600 text-sky-200 hover:text-white font-medium text-xs flex items-center gap-1 transition">
-                          <i data-lucide="map-pinned" class="w-3.5 h-3.5"></i> Copy Địa chỉ Trung
-                        </button>
-                      ` : ''}
-                      <button onclick="showBigChinese('${safeTitle}', '${safeZhName || safeZhAddr}', '${safeZhAddr}')" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition">
-                        <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> Phóng to cho Tài xế
-                      </button>
-                      <button onclick="speakChinese('${safeZhName} ${safeZhAddr}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-medium flex items-center gap-1 transition">
-                        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Đọc Loa
-                      </button>
-                    </div>
-                  ` : ''}
-                </div>
-              ` : ''}
-
-              <div class="flex flex-wrap gap-2 pt-1">
-                ${otherBadges}
-                <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-400 text-xs">👤 ${item.assigned_to}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex md:flex-col items-center md:items-end justify-between gap-2.5 border-t md:border-t-0 border-slate-800 pt-3 md:pt-0 shrink-0">
-            <span class="font-semibold text-sm text-slate-200">${Number(item.cost).toLocaleString('vi-VN')} ₫</span>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <button onclick="toggleItemDone(${item.id})" class="px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition ${isDone ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-300 hover:bg-slate-800' : 'bg-slate-800 hover:bg-emerald-600 border-slate-700 text-slate-200 hover:text-white'}">
-                <i data-lucide="${isDone ? 'check-circle-2' : 'circle'}" class="w-3.5 h-3.5"></i>
-                <span>${doneBtnLabel}</span>
-              </button>
-
-              ${item.qr_image ? `<button onclick="showQr('${safeTitle}', '${item.qr_image}')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-600 hover:text-white text-xs font-medium flex items-center gap-1 transition"><i data-lucide="qr-code" class="w-3.5 h-3.5"></i> QR</button>` : ''}
-              <button onclick="openEditItemModal(${item.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-600/20 text-slate-300 hover:text-sky-400 text-xs flex items-center gap-1 transition">
-                <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Sửa
-              </button>
-              <button onclick="deleteItem(${item.id})" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-600/20 text-slate-400 hover:text-rose-400 transition">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function onStartOrEndDateChange() {
-      const type = document.getElementById('f_type').value;
-      const startVal = document.getElementById('f_start').value;
-      let endVal = document.getElementById('f_end').value;
-
-      if (type === 'hotel' && startVal) {
-        if (!endVal || extractDateKey(endVal) <= extractDateKey(startVal)) {
-          const nextDay = addDaysToDateStr(extractDateKey(startVal), 1);
-          endVal = `${nextDay}T12:00`;
-          document.getElementById('f_end').value = endVal;
-        }
-        const n = calculateHotelNights(startVal, endVal);
-        const nightsInput = document.getElementById('d_nights');
-        if (nightsInput) nightsInput.value = `${n} đêm`;
-        const preview = document.getElementById('hotelNightsPreview');
-        const txt = document.getElementById('hotelNightsText');
-        if (preview && txt) {
-          preview.classList.remove('hidden');
-          preview.classList.add('flex');
-          txt.innerText = `🌙 Lưu trú: ${n} đêm (Nhận phòng ${formatShortDateVN(startVal)} ➔ Trả phòng ${formatShortDateVN(endVal)})`;
-        }
-      }
-    }
-
-    function renderDynamicFields(existingDetails = {}) {
-      const type = document.getElementById('f_type').value;
-      const box = document.getElementById('dynamicFields');
-      const lblStart = document.getElementById('lbl_start_dt');
-      const lblEnd = document.getElementById('lbl_end_dt');
-      const hotelPreview = document.getElementById('hotelNightsPreview');
-
-      document.getElementById('d_address').value = existingDetails.d_address || '';
-      document.getElementById('d_chinese_name').value = existingDetails.d_chinese_name || '';
-      document.getElementById('d_chinese_address').value = existingDetails.d_chinese_address || '';
-
-      if (type === 'hotel') {
-        lblStart.innerText = '🔑 Ngày giờ Nhận phòng (Check-in)';
-        lblEnd.innerText = '🧳 Ngày giờ Trả phòng (Check-out)';
-        hotelPreview.classList.remove('hidden');
-        hotelPreview.classList.add('flex');
-      } else {
-        lblStart.innerText = 'Thời gian bắt đầu';
-        lblEnd.innerText = 'Thời gian kết thúc (Tùy chọn)';
-        hotelPreview.classList.add('hidden');
-        hotelPreview.classList.remove('flex');
-      }
-
-      if (type === 'flight') {
-        box.innerHTML = `
-          <input id="d_seat" value="${existingDetails.d_seat || ''}" placeholder="Số ghế (VD: 14A, 14B)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-          <input id="d_baggage" value="${existingDetails.d_baggage || ''}" placeholder="Hành lý / Ghi chú" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-        `;
-      } else if (type === 'train') {
-        box.innerHTML = `
-          <input id="d_coach" value="${existingDetails.d_coach || ''}" placeholder="Số toa / Loại xe" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-          <input id="d_seat" value="${existingDetails.d_seat || ''}" placeholder="Số ghế / Giờ tập trung" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-        `;
-      } else if (type === 'hotel') {
-        box.innerHTML = `
-          <input id="d_nights" value="${existingDetails.d_nights || '1 đêm'}" placeholder="Số đêm (VD: 1 đêm, 2 đêm)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-amber-300 font-semibold" />
-          <input id="d_breakfast" value="${existingDetails.d_breakfast || ''}" placeholder="Ăn sáng (VD: Có Buffet sáng)" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-        `;
-        onStartOrEndDateChange();
-      } else if (type === 'esim') {
-        box.innerHTML = `
-          <input id="d_iccid" value="${existingDetails.d_iccid || ''}" placeholder="Số ICCID của eSIM" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-          <input id="d_activation" value="${existingDetails.d_activation || ''}" placeholder="Mã kích hoạt / Gói dung lượng" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-        `;
-      } else if (type === 'ticket') {
-        box.innerHTML = `
-          <input id="d_slot" value="${existingDetails.d_slot || ''}" placeholder="Khung giờ vào cửa (VD: 08:30 - 10:00)" class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-        `;
-      } else {
-        box.innerHTML = `
-          <input id="d_note" value="${existingDetails.d_note || ''}" placeholder="Ghi chú hoạt động..." class="col-span-2 bg-slate-900 border border-slate-700 rounded-lg p-2 text-white" />
-        `;
-      }
-    }
-
-    function openItemModal() {
-      if (!currentTripId) return alert('Vui lòng tạo hoặc chọn một chuyến du lịch trước!');
-      document.getElementById('itemForm').reset();
-      document.getElementById('f_item_id').value = '';
-      document.getElementById('f_is_done').checked = false;
-      document.getElementById('itemModalTitle').innerText = 'Thêm Hoạt động / Vé mới';
-      renderDynamicFields();
-      document.getElementById('itemModal').classList.remove('hidden');
-      document.getElementById('itemModal').classList.add('flex');
-    }
-
-    function openEditItemModal(id) {
-      const item = items.find(i => i.id === id);
-      if (!item) return;
-      document.getElementById('f_item_id').value = item.id;
-      document.getElementById('f_type').value = item.item_type;
-      document.getElementById('f_code').value = item.provider_or_code || '';
-      document.getElementById('f_title').value = item.title || '';
-      document.getElementById('f_start').value = normalizeIsoLocal(item.start_datetime);
-
-      if (item.item_type === 'hotel') {
-        const d = item.details || {};
-        const parsedNights = d.d_nights ? parseInt(String(d.d_nights).replace(/\D/g, ''), 10) : 1;
-        document.getElementById('f_end').value = resolveHotelCheckoutDatetime(item.start_datetime, item.end_datetime, parsedNights);
-      } else {
-        document.getElementById('f_end').value = normalizeIsoLocal(item.end_datetime);
-      }
-
-      document.getElementById('f_from').value = item.location_from || '';
-      document.getElementById('f_to').value = item.location_to || '';
-      document.getElementById('f_assigned').value = item.assigned_to || 'Cả gia đình';
-      document.getElementById('f_cost').value = item.cost || 0;
-      document.getElementById('f_status').value = item.status || 'Đã xác nhận';
-      document.getElementById('f_is_done').checked = Boolean(item.is_done);
-      document.getElementById('f_qr').value = '';
-
-      renderDynamicFields(item.details || {});
-      document.getElementById('itemModalTitle').innerText = 'Chỉnh sửa Hoạt động / Vé';
-      document.getElementById('itemModal').classList.remove('hidden');
-      document.getElementById('itemModal').classList.add('flex');
-    }
-
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = err => reject(err);
-      });
-    }
-
-    async function submitItem(e) {
-      e.preventDefault();
-      const editId = document.getElementById('f_item_id').value;
-      const details = {};
-
-      const addr = document.getElementById('d_address').value.trim();
-      const zhName = document.getElementById('d_chinese_name').value.trim();
-      const zhAddr = document.getElementById('d_chinese_address').value.trim();
-      if (addr) details.d_address = addr;
-      if (zhName) details.d_chinese_name = zhName;
-      if (zhAddr) details.d_chinese_address = zhAddr;
-
-      document.querySelectorAll('#dynamicFields input').forEach(inp => {
-        if (inp.value) details[inp.id] = inp.value;
-      });
-
-      const fileInput = document.getElementById('f_qr');
-      let qr_image = null;
-      if (fileInput.files.length > 0) {
-        qr_image = await toBase64(fileInput.files[0]);
-      }
-
-      const is_done = document.getElementById('f_is_done').checked;
-      const item_type = document.getElementById('f_type').value;
-      let status = document.getElementById('f_status').value;
-      if (is_done) {
-        status = item_type === 'esim' ? 'Đã dùng' : 'Đã xong';
-      }
-
-      const startVal = document.getElementById('f_start').value;
-      let endVal = document.getElementById('f_end').value || null;
-      if (item_type === 'hotel') {
-        endVal = resolveHotelCheckoutDatetime(startVal, endVal, 1);
-        const nights = calculateHotelNights(startVal, endVal);
-        details.d_nights = `${nights} đêm`;
-      }
-
-      const payload = {
-        trip_id: currentTripId,
-        item_type,
-        provider_or_code: document.getElementById('f_code').value,
-        title: document.getElementById('f_title').value,
-        start_datetime: startVal,
-        end_datetime: endVal,
-        location_from: document.getElementById('f_from').value,
-        location_to: document.getElementById('f_to').value,
-        assigned_to: document.getElementById('f_assigned').value,
-        cost: Number(document.getElementById('f_cost').value || 0),
-        status,
-        is_done,
-        details,
-        qr_image
-      };
-
-      if (editId) {
-        await apiFetch(`/api/items/${editId}`, { method: 'PUT', body: JSON.stringify(payload) });
-      } else {
-        await apiFetch('/api/items', { method: 'POST', body: JSON.stringify(payload) });
-      }
-
-      closeItemModal();
-      document.getElementById('itemForm').reset();
-      loadTrips();
-    }
-
-    async function deleteItem(id) {
-      if (!confirm('Bạn có chắc muốn xóa hoạt động/vé này khỏi lịch trình?')) return;
-      await apiFetch(`/api/items/${id}`, { method: 'DELETE' });
-      loadTrips();
-    }
-
-    function showQr(title, src) {
-      document.getElementById('qrModalTitle').innerText = title;
-      document.getElementById('qrModalImg').src = src;
-      document.getElementById('qrModal').classList.remove('hidden');
-      document.getElementById('qrModal').classList.add('flex');
-    }
-
-    function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
-    function closeTripModal() { document.getElementById('tripModal').classList.add('hidden'); }
-    function openPasswordModal() {
-      document.getElementById('pwMsg').classList.add('hidden');
-      document.getElementById('passwordForm').reset();
-      document.getElementById('passwordModal').classList.remove('hidden');
-      document.getElementById('passwordModal').classList.add('flex');
-    }
-    function closePasswordModal() { document.getElementById('passwordModal').classList.add('hidden'); }
 
     checkAuthState();
   </script>
