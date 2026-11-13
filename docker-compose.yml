@@ -32,12 +32,13 @@ services:
     networks:
       - travel-net
 
-  frontend:
-    build: ./frontend
-    container_name: travel-web
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: travel-tunnel
     restart: always
-    ports:
-      - "8080:8080"
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TOKEN}
     depends_on:
       - backend
     networks:
