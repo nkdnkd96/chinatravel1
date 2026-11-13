@@ -15,13 +15,23 @@ types.setTypeParser(1082, (str) => str);
 const app = express();
 app.enable('trust proxy');
 app.use(cors());
-app.use(express.json({ limit: '12mb' }));
+app.use(express.json({ limit: '25mb' }));
 
-// Tự động nhận diện thư mục chứa index.html
+// Thư mục giao diện Frontend
 const FRONTEND_DIR = fs.existsSync(path.join(__dirname, 'frontend'))
   ? path.join(__dirname, 'frontend')
   : path.join(__dirname, '../frontend');
 
+// Thư mục lưu trữ file ảnh QR / Voucher trên Server
+const UPLOADS_DIR = fs.existsSync('/app')
+  ? '/app/uploads'
+  : path.join(__dirname, '../uploads');
+
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(FRONTEND_DIR));
 
 const pool = new Pool({
@@ -32,6 +42,26 @@ const JWT_SECRET = process.env.JWT_SECRET || 'travel_os_super_secret_jwt_key_202
 
 function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+// Hàm chuyển dữ liệu ảnh Base64 thành file lưu trên ổ cứng Server (/uploads/...)
+function saveQrImageToFile(qrInput) {
+  if (!qrInput) return null;
+  if (typeof qrInput === 'string' && qrInput.startsWith('/uploads/')) {
+    return qrInput;
+  }
+  const match = String(qrInput).match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+  if (match) {
+    let ext = match[1].toLowerCase();
+    if (ext === 'jpeg') ext = 'jpg';
+    if (ext.includes('svg')) ext = 'svg';
+    const base64Data = match[2];
+    const fileName = `qr_${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${ext}`;
+    const filePath = path.join(UPLOADS_DIR, fileName);
+    fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+    return `/uploads/${fileName}`;
+  }
+  return qrInput;
 }
 
 async function ensureSchema() {
@@ -57,6 +87,11 @@ async function ensureSchema() {
     await pool.query(`
       ALTER TABLE itinerary_items 
       ADD COLUMN IF NOT EXISTS is_done BOOLEAN DEFAULT FALSE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE itinerary_items 
+      ADD COLUMN IF NOT EXISTS qr_image TEXT;
     `);
 
     await pool.query(`
@@ -231,6 +266,7 @@ app.post('/api/items', authMiddleware, async (req, res) => {
   } = req.body;
 
   try {
+    const savedQrPath = saveQrImageToFile(qr_image);
     const result = await pool.query(
       `INSERT INTO itinerary_items 
        (trip_id, item_type, title, provider_or_code, start_datetime, end_datetime, location_from, location_to, assigned_to, cost, status, is_done, details, qr_image)
@@ -239,7 +275,7 @@ app.post('/api/items', authMiddleware, async (req, res) => {
         trip_id, item_type, title, provider_or_code,
         start_datetime, end_datetime || null, location_from, location_to,
         assigned_to || 'Cả đoàn', cost || 0, status || 'Đã xác nhận',
-        Boolean(is_done), details || {}, qr_image || null
+        Boolean(is_done), details || {}, savedQrPath
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -256,6 +292,7 @@ app.put('/api/items/:id', authMiddleware, async (req, res) => {
   } = req.body;
 
   try {
+    const savedQrPath = qr_image ? saveQrImageToFile(qr_image) : null;
     const result = await pool.query(
       `UPDATE itinerary_items 
        SET item_type = $1, title = $2, provider_or_code = $3,
@@ -267,9 +304,27 @@ app.put('/api/items/:id', authMiddleware, async (req, res) => {
         item_type, title, provider_or_code,
         start_datetime, end_datetime || null, location_from, location_to,
         assigned_to || 'Cả đoàn', cost || 0, status || 'Đã xác nhận',
-        Boolean(is_done), details || {}, qr_image, req.params.id
+        Boolean(is_done), details || {}, savedQrPath, req.params.id
       ]
     );
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// API tải nhanh / cập nhật riêng ảnh QR cho eSIM hoặc Vé
+app.patch('/api/items/:id/qr', authMiddleware, async (req, res) => {
+  try {
+    const { qr_image } = req.body;
+    const savedQrPath = qr_image ? saveQrImageToFile(qr_image) : null;
+    const result = await pool.query(
+      `UPDATE itinerary_items SET qr_image = $1 WHERE id = $2 RETURNING *`,
+      [savedQrPath, req.params.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy mục này' });
+    }
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -500,7 +555,6 @@ if (fs.existsSync(CERT_PATH) && fs.existsSync(KEY_PATH)) {
     console.log('TravelOS HTTPS running on port 443 (Cloudflare SSL)');
   });
 
-  // Cổng 80 tự động phục vụ hoặc chuyển hướng sang HTTPS
   http.createServer((req, res) => {
     const host = req.headers.host ? req.headers.host.replace(/:\d+$/, '') : '';
     res.writeHead(301, { Location: `https://${host}${req.url}` });
@@ -510,5 +564,5 @@ if (fs.existsSync(CERT_PATH) && fs.existsSync(KEY_PATH)) {
   });
 } else {
   const PORT = process.env.PORT || 80;
-  app.listen(PORT, () => console.log(`TravelOS HTTP running on port ${PORT} (No SSL certs found in /app/certs)`));
+  app.listen(PORT, () => console.log(`TravelOS HTTP running on port ${PORT}`));
 }

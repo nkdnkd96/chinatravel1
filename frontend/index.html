@@ -29,7 +29,10 @@
 </head>
 <body class="min-h-screen flex flex-col md:flex-row">
 
-  <!-- TOAST THÔNG BÁO COPY NHANH -->
+  <!-- INPUT ẨN DÙNG ĐỂ TẢI NHANH ẢNH QR 1-CHẠM TRỰC TIẾP TRÊN THẺ -->
+  <input type="file" id="quickQrInput" accept="image/*" class="hidden" onchange="handleQuickQrChange(event)" />
+
+  <!-- TOAST THÔNG BÁO NHANH -->
   <div id="copyToast" class="fixed bottom-5 right-5 z-[100] hidden items-center gap-2.5 px-4 py-3 rounded-2xl bg-emerald-600 text-white text-xs font-semibold shadow-2xl border border-emerald-400/40 transition-all">
     <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0"></i>
     <span id="copyToastText">Đã sao chép!</span>
@@ -178,7 +181,6 @@
             <span>Giao tiếp nhanh</span>
           </button>
 
-          <!-- Hai nút thêm lịch trình sẽ tự động ẩn đi khi người dùng chuyển sang tab Đồ dùng & Hành lý để đỡ loạn -->
           <div id="itineraryHeaderActions" class="flex flex-wrap items-center gap-2.5">
             <input type="file" id="excelFileInput" accept=".xlsx,.xls" class="hidden" onchange="handleExcelUpload(event)" />
             <button onclick="triggerExcelUpload()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-3 rounded-xl shadow-lg shadow-emerald-600/25 transition text-sm">
@@ -195,13 +197,12 @@
       </div>
     </div>
 
-    <!-- THANH BỘ LỌC TÍNH NĂNG (ĐƯA TAB ĐỒ DÙNG & HÀNH LÝ LÊN VỊ TRÍ SỐ 2 ĐỂ DỄ THẤY NGAY LẬP TỨC) -->
+    <!-- THANH BỘ LỌC TÍNH NĂNG -->
     <div class="flex flex-wrap items-center gap-2 pb-3 mb-6">
       <button onclick="setFilter('all')" data-tab="all" class="tab-btn bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shrink-0">
         <i data-lucide="calendar-clock" class="w-4 h-4"></i> Tất cả Lịch trình
       </button>
 
-      <!-- TAB ĐỒ DÙNG & HÀNH LÝ NẰM NGAY VỊ TRÍ SỐ 2 -->
       <button onclick="setFilter('packing')" data-tab="packing" class="tab-btn bg-slate-900 hover:bg-slate-800 text-orange-300 border border-orange-500/40 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 shrink-0">
         <i data-lucide="luggage" class="w-4 h-4 text-orange-400"></i> Đồ dùng & Hành lý <span id="packingCountBadge" class="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300 text-xs">0</span>
       </button>
@@ -532,14 +533,18 @@
           <input type="checkbox" id="f_is_done" class="w-5 h-5 accent-emerald-500 rounded cursor-pointer" />
         </div>
 
-        <div>
-          <label class="block text-slate-400 mb-1">Đính kèm ảnh Mã QR / Voucher</label>
-          <input type="file" id="f_qr" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-800 file:text-slate-200 hover:file:bg-slate-700" />
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+          <label class="block text-slate-300 text-xs font-semibold">📷 Đính kèm ảnh Mã QR eSIM / Voucher (Lưu trực tiếp trên Server)</label>
+          <input type="file" id="f_qr" accept="image/*" onchange="previewSelectedQr(event)" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer" />
+          <div id="f_qr_preview_box" class="hidden items-center gap-3 pt-2">
+            <img id="f_qr_preview_img" src="" alt="QR Preview" class="w-16 h-16 object-contain bg-white p-1 rounded-lg border border-slate-700" />
+            <span class="text-xs text-emerald-400 font-medium">✓ Đã có ảnh QR đính kèm</span>
+          </div>
         </div>
 
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
           <button type="button" onclick="closeItemModal()" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-300">Hủy</button>
-          <button type="submit" class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Lưu thông tin</button>
+          <button type="submit" id="itemSubmitBtn" class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium">Lưu thông tin</button>
         </div>
       </form>
     </div>
@@ -618,11 +623,21 @@
   </div>
 
   <!-- MODAL XEM NHANH MÃ QR -->
-  <div id="qrModal" onclick="this.classList.add('hidden')" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-50">
-    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-sm w-full text-center space-y-3" onclick="event.stopPropagation()">
-      <h4 id="qrModalTitle" class="font-bold text-white">Mã QR / Voucher</h4>
-      <img id="qrModalImg" src="" alt="QR Voucher" class="w-full rounded-xl bg-white p-3 mx-auto max-h-80 object-contain" />
-      <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm">Đóng</button>
+  <div id="qrModal" onclick="this.classList.add('hidden')" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 p-6 rounded-2xl max-w-md w-full text-center space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+      <h4 id="qrModalTitle" class="font-bold text-white text-base">Mã QR / Voucher</h4>
+      <img id="qrModalImg" src="" alt="QR Voucher" class="w-full rounded-xl bg-white p-3 mx-auto max-h-96 object-contain" />
+      <div class="flex items-center justify-center gap-2 pt-1">
+        <button id="qrModalReplaceBtn" class="flex-1 py-2.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5">
+          <i data-lucide="upload" class="w-4 h-4"></i> Đổi ảnh QR khác
+        </button>
+        <a id="qrModalDownloadBtn" href="#" download="qr-esim.png" target="_blank" class="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-emerald-300 font-medium rounded-xl text-xs flex items-center gap-1">
+          <i data-lucide="download" class="w-4 h-4"></i> Tải về
+        </a>
+        <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-medium">
+          Đóng
+        </button>
+      </div>
     </div>
   </div>
 
@@ -639,6 +654,7 @@
     let customPhrases = [];
     let currentPhraseCategory = 'all';
     let toastTimer = null;
+    let quickQrTargetItemId = null;
 
     const typeConfig = {
       flight:   { icon: 'plane', label: 'Chuyến bay', badge: 'bg-sky-500/15 text-sky-400 border-sky-500/30' },
@@ -649,8 +665,6 @@
       activity: { icon: 'utensils', label: 'Hoạt động', badge: 'bg-teal-500/15 text-teal-400 border-teal-500/30' }
     };
 
-    // THỨ TỰ ƯU TIÊN SẮP XẾP ĐỒ DÙNG:
-    // 1. Chưa có (Ưu tiên cao nhất lên đầu) -> 2. Đã có -> 3. Đã chuẩn bị -> 4. Sang đó rồi mua
     const PACKING_STATUS_PRIORITY = {
       'Chưa có': 1,
       'Đã có': 2,
@@ -764,6 +778,98 @@
         toast.classList.add('hidden');
         toast.classList.remove('flex');
       }, 2600);
+    }
+
+    // ================= NÉN & XỬ LÝ ẢNH QR TRƯỚC KHI UPLOAD LÊN SERVER =================
+    function compressImageFile(file, maxDim = 1400) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = err => reject(err);
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onerror = () => resolve(e.target.result);
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width <= maxDim && height <= maxDim && file.size < 1500000) {
+              return resolve(e.target.result);
+            }
+            if (width > height && width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/png', 0.9));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function previewSelectedQr(e) {
+      const file = e.target.files[0];
+      const box = document.getElementById('f_qr_preview_box');
+      const img = document.getElementById('f_qr_preview_img');
+      if (!file) return;
+      const dataUrl = await compressImageFile(file);
+      img.src = dataUrl;
+      box.classList.remove('hidden');
+      box.classList.add('flex');
+    }
+
+    function triggerQuickQrUpload(itemId) {
+      quickQrTargetItemId = itemId;
+      const inp = document.getElementById('quickQrInput');
+      inp.value = '';
+      inp.click();
+    }
+
+    async function handleQuickQrChange(e) {
+      const file = e.target.files[0];
+      if (!file || !quickQrTargetItemId) return;
+      try {
+        showCopyToast('Đang tải ảnh QR lên Server...');
+        const base64Data = await compressImageFile(file);
+        const res = await apiFetch(`/api/items/${quickQrTargetItemId}/qr`, {
+          method: 'PATCH',
+          body: JSON.stringify({ qr_image: base64Data })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          return alert('Lỗi lưu ảnh QR: ' + (err.error || res.statusText));
+        }
+        await loadItems(currentTripId);
+        showCopyToast('Đã lưu ảnh Mã QR lên Server thành công!');
+        const modal = document.getElementById('qrModal');
+        if (!modal.classList.contains('hidden')) {
+          showQrById(quickQrTargetItemId);
+        }
+      } catch (err) {
+        alert('Không thể tải ảnh QR lên server: ' + err.message);
+      }
+    }
+
+    function showQrById(itemId) {
+      const item = items.find(i => i.id === itemId);
+      if (!item || !item.qr_image) return;
+      document.getElementById('qrModalTitle').innerText = item.title || 'Mã QR / Voucher';
+      document.getElementById('qrModalImg').src = item.qr_image;
+      document.getElementById('qrModalDownloadBtn').href = item.qr_image;
+      const replaceBtn = document.getElementById('qrModalReplaceBtn');
+      replaceBtn.onclick = () => triggerQuickQrUpload(item.id);
+      document.getElementById('qrModal').classList.remove('hidden');
+      document.getElementById('qrModal').classList.add('flex');
+      lucide.createIcons();
     }
 
     // ================= THỜI TIẾT REAL-TIME CÁC ĐIỂM ĐẾN =================
@@ -973,7 +1079,6 @@
       return res;
     }
 
-    // ================= PHÁT LOA TIẾNG TRUNG & PHÓNG TO CHỮ HÁN =================
     function speakChinese(text) {
       if (!('speechSynthesis' in window)) {
         return alert('Trình duyệt của bạn không hỗ trợ phát giọng nói!');
@@ -1014,7 +1119,6 @@
       lucide.createIcons();
     }
 
-    // ================= BỘ GIAO TIẾP TIẾNG TRUNG =================
     async function loadCustomPhrases() {
       const res = await apiFetch('/api/phrases');
       customPhrases = await res.json();
@@ -1146,7 +1250,7 @@
       renderPhrasebook();
     }
 
-    // ================= QUẢN LÝ ĐỒ DÙNG & HÀNH LÝ CẦN CHUẨN BỊ (PACKING LIST) =================
+    // ================= QUẢN LÝ ĐỒ DÙNG & HÀNH LÝ CẦN CHUẨN BỊ =================
     async function loadPackingItems(tripId) {
       if (!tripId) return;
       try {
@@ -1235,7 +1339,6 @@
       await loadTrips();
     }
 
-    // Nút tạo nhanh bộ đồ dùng gợi ý mẫu 1-chạm để bạn dễ hình dung và chỉnh sửa
     async function seedSamplePackingItems() {
       if (!currentTripId) return;
       const samples = [
@@ -1278,7 +1381,6 @@
     }
 
     function renderPackingTab(container) {
-      // Sắp xếp ưu tiên đúng yêu cầu: 1. Chưa có -> 2. Đã có -> 3. Đã chuẩn bị -> 4. Sang đó rồi mua
       const sorted = [...packingItems].sort((a, b) => {
         const pa = PACKING_STATUS_PRIORITY[a.status] || 99;
         const pb = PACKING_STATUS_PRIORITY[b.status] || 99;
@@ -1304,7 +1406,6 @@
 
       container.innerHTML = `
         <div class="space-y-6">
-          <!-- KHUNG ĐIỀU KHIỂN & NÚT THÊM ĐỒ DÙNG RIÊNG BIỆT TRONG TAB -->
           <div class="glass rounded-2xl p-5 border border-orange-500/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div class="space-y-1">
               <h3 class="text-lg font-bold text-white flex items-center gap-2">
@@ -1333,7 +1434,6 @@
             </div>
           </div>
 
-          <!-- THỐNG KÊ NHANH 4 TRẠNG THÁI THEO ĐÚNG THỨ TỰ ƯU TIÊN -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-between">
               <div>
@@ -1365,7 +1465,6 @@
             </div>
           </div>
 
-          <!-- BỘ LỌC NHANH THEO KÝ GỬI / XÁCH TAY & VALI CỦA AI -->
           <div class="flex items-center gap-2 overflow-x-auto pb-1">
             <button onclick="setPackingSubFilter('all')" class="px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition ${packingSubFilter === 'all' ? 'bg-orange-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800 hover:bg-slate-800'}">
               Tất cả (${sorted.length})
@@ -1386,7 +1485,6 @@
             `).join('')}
           </div>
 
-          <!-- DANH SÁCH CHI TIẾT ĐỒ DÙNG -->
           ${filteredList.length === 0 ? `
             <div class="glass rounded-2xl p-12 text-center space-y-4">
               <p class="text-slate-300 text-sm">Chưa có món đồ dùng nào trong danh sách của chuyến đi này.</p>
@@ -2091,7 +2189,7 @@
         container.innerHTML = `
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <h3 class="font-bold text-sm uppercase tracking-wider text-purple-400">Quản lý eSIM Du lịch (eSIM đã dùng tự động xếp xuống cuối & làm mờ)</h3>
+              <h3 class="font-bold text-sm uppercase tracking-wider text-purple-400">Quản lý eSIM Du lịch (Bấm "Đính kèm QR" để lưu mã QR kích hoạt lên Server)</h3>
             </div>
             <div class="grid gap-3">
               ${filtered.map(item => renderCard(item)).join('')}
@@ -2182,7 +2280,7 @@
         .map(([_, v]) => `<span class="px-2.5 py-1 rounded-md bg-slate-800/90 text-slate-300 text-xs">${v}</span>`)
         .join('');
 
-      const safeTitle = (item.title || '').replace(/'/g, "\\'");
+      const safeTitle = (item.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
       const safeZhName = zhName.replace(/'/g, "\\'");
       const safeZhAddr = zhAddr.replace(/'/g, "\\'");
 
@@ -2269,7 +2367,16 @@
                 <span>${doneBtnLabel}</span>
               </button>
 
-              ${item.qr_image ? `<button onclick="showQr('${safeTitle}', '${item.qr_image}')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-600 hover:text-white text-xs font-medium flex items-center gap-1 transition"><i data-lucide="qr-code" class="w-3.5 h-3.5"></i> QR</button>` : ''}
+              ${item.qr_image ? `
+                <button onclick="showQrById(${item.id})" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-purple-600/25 transition">
+                  <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> Xem QR
+                </button>
+              ` : `
+                <button onclick="triggerQuickQrUpload(${item.id})" class="px-2.5 py-1.5 rounded-lg bg-purple-500/15 border border-purple-500/40 text-purple-300 hover:bg-purple-600 hover:text-white text-xs font-semibold flex items-center gap-1 transition" title="Tải ảnh Mã QR lên Server">
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i> + Đính kèm QR
+                </button>
+              `}
+
               <button onclick="openEditItemModal(${item.id})" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-sky-600/20 text-slate-300 hover:text-sky-400 text-xs flex items-center gap-1 transition">
                 <i data-lucide="pencil" class="w-3.5 h-3.5"></i> Sửa
               </button>
@@ -2366,6 +2473,8 @@
       document.getElementById('itemForm').reset();
       document.getElementById('f_item_id').value = '';
       document.getElementById('f_is_done').checked = false;
+      document.getElementById('f_qr_preview_box').classList.add('hidden');
+      document.getElementById('f_qr_preview_box').classList.remove('flex');
       document.getElementById('itemModalTitle').innerText = 'Thêm Hoạt động / Vé mới';
       renderDynamicFields();
       document.getElementById('itemModal').classList.remove('hidden');
@@ -2394,22 +2503,27 @@
       document.getElementById('f_assigned').value = item.assigned_to || 'Cả gia đình';
       document.getElementById('f_cost').value = item.cost || 0;
       document.getElementById('f_status').value = item.status || 'Đã xác nhận';
+      if (!document.getElementById('f_status').value) {
+        document.getElementById('f_status').value = 'Đã xác nhận';
+      }
       document.getElementById('f_is_done').checked = Boolean(item.is_done);
       document.getElementById('f_qr').value = '';
+
+      const pBox = document.getElementById('f_qr_preview_box');
+      const pImg = document.getElementById('f_qr_preview_img');
+      if (item.qr_image) {
+        pImg.src = item.qr_image;
+        pBox.classList.remove('hidden');
+        pBox.classList.add('flex');
+      } else {
+        pBox.classList.add('hidden');
+        pBox.classList.remove('flex');
+      }
 
       renderDynamicFields(item.details || {});
       document.getElementById('itemModalTitle').innerText = 'Chỉnh sửa Hoạt động / Vé';
       document.getElementById('itemModal').classList.remove('hidden');
       document.getElementById('itemModal').classList.add('flex');
-    }
-
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = err => reject(err);
-      });
     }
 
     async function submitItem(e) {
@@ -2431,12 +2545,12 @@
       const fileInput = document.getElementById('f_qr');
       let qr_image = null;
       if (fileInput.files.length > 0) {
-        qr_image = await toBase64(fileInput.files[0]);
+        qr_image = await compressImageFile(fileInput.files[0]);
       }
 
       const is_done = document.getElementById('f_is_done').checked;
       const item_type = document.getElementById('f_type').value;
-      let status = document.getElementById('f_status').value;
+      let status = document.getElementById('f_status').value || 'Đã xác nhận';
       if (is_done) {
         status = item_type === 'esim' ? 'Đã dùng' : 'Đã xong';
       }
@@ -2466,14 +2580,18 @@
         qr_image
       };
 
-      if (editId) {
-        await apiFetch(`/api/items/${editId}`, { method: 'PUT', body: JSON.stringify(payload) });
-      } else {
-        await apiFetch('/api/items', { method: 'POST', body: JSON.stringify(payload) });
+      const res = editId
+        ? await apiFetch(`/api/items/${editId}`, { method: 'PUT', body: JSON.stringify(payload) })
+        : await apiFetch('/api/items', { method: 'POST', body: JSON.stringify(payload) });
+
+      if (!res.ok) {
+        const err = await res.json();
+        return alert('Lỗi khi lưu: ' + (err.error || res.statusText));
       }
 
       closeItemModal();
       document.getElementById('itemForm').reset();
+      showCopyToast('Đã lưu thông tin thành công!');
       loadTrips();
     }
 
@@ -2481,13 +2599,6 @@
       if (!confirm('Bạn có chắc muốn xóa hoạt động/vé này khỏi lịch trình?')) return;
       await apiFetch(`/api/items/${id}`, { method: 'DELETE' });
       loadTrips();
-    }
-
-    function showQr(title, src) {
-      document.getElementById('qrModalTitle').innerText = title;
-      document.getElementById('qrModalImg').src = src;
-      document.getElementById('qrModal').classList.remove('hidden');
-      document.getElementById('qrModal').classList.add('flex');
     }
 
     function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
