@@ -1,4 +1,6 @@
 const express = require('express');
+const http = require('http');
+const https = require('https');
 const { Pool, types } = require('pg');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -11,10 +13,11 @@ types.setTypeParser(1114, (str) => str);
 types.setTypeParser(1082, (str) => str);
 
 const app = express();
+app.enable('trust proxy');
 app.use(cors());
 app.use(express.json({ limit: '12mb' }));
 
-// Tự động nhận diện thư mục chứa index.html (trong Docker volume hoặc chạy local)
+// Tự động nhận diện thư mục chứa index.html
 const FRONTEND_DIR = fs.existsSync(path.join(__dirname, 'frontend'))
   ? path.join(__dirname, 'frontend')
   : path.join(__dirname, '../frontend');
@@ -67,15 +70,14 @@ async function ensureSchema() {
       );
     `);
 
-    // Bảng mới: Quản lý Đồ dùng & Hành lý cần chuẩn bị (Packing List)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS packing_items (
         id SERIAL PRIMARY KEY,
         trip_id INT REFERENCES trips(id) ON DELETE CASCADE,
         item_name VARCHAR(255) NOT NULL,
         quantity INT DEFAULT 1,
-        status VARCHAR(50) DEFAULT 'Chưa có', -- 'Chưa có', 'Đã có', 'Đã chuẩn bị', 'Sang đó rồi mua'
-        luggage_type VARCHAR(50) DEFAULT 'Ký gửi', -- 'Ký gửi', 'Xách tay', 'Mặc trên người'
+        status VARCHAR(50) DEFAULT 'Chưa có',
+        luggage_type VARCHAR(50) DEFAULT 'Ký gửi',
         suitcase_owner VARCHAR(150) DEFAULT 'Vali chung',
         cost NUMERIC(12, 0) DEFAULT 0,
         notes TEXT,
@@ -354,7 +356,7 @@ app.post('/api/trips/:tripId/import', authMiddleware, async (req, res) => {
   }
 });
 
-// ================= PACKING ITEMS (ĐỒ DÙNG & HÀNH LÝ CẦN CHUẨN BỊ) APIs =================
+// ================= PACKING ITEMS APIs =================
 app.get('/api/trips/:tripId/packing', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
@@ -484,5 +486,29 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(FRONTEND_DIR, 'index.html'));
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`TravelOS Web & API running on port ${PORT}`));
+// ================= KHỞI CHẠY HTTPS (443) & HTTP (80) =================
+const CERT_PATH = '/app/certs/cert.pem';
+const KEY_PATH = '/app/certs/key.pem';
+
+if (fs.existsSync(CERT_PATH) && fs.existsSync(KEY_PATH)) {
+  const sslOptions = {
+    cert: fs.readFileSync(CERT_PATH),
+    key: fs.readFileSync(KEY_PATH)
+  };
+
+  https.createServer(sslOptions, app).listen(443, () => {
+    console.log('TravelOS HTTPS running on port 443 (Cloudflare SSL)');
+  });
+
+  // Cổng 80 tự động phục vụ hoặc chuyển hướng sang HTTPS
+  http.createServer((req, res) => {
+    const host = req.headers.host ? req.headers.host.replace(/:\d+$/, '') : '';
+    res.writeHead(301, { Location: `https://${host}${req.url}` });
+    res.end();
+  }).listen(80, () => {
+    console.log('HTTP Redirect Server running on port 80 -> 443');
+  });
+} else {
+  const PORT = process.env.PORT || 80;
+  app.listen(PORT, () => console.log(`TravelOS HTTP running on port ${PORT} (No SSL certs found in /app/certs)`));
+}
