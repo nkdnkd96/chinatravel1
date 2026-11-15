@@ -249,7 +249,7 @@ app.get('/api/trips/:tripId/items', authMiddleware, async (req, res) => {
     const result = await pool.query(
       `SELECT * FROM itinerary_items 
        WHERE trip_id = $1 
-       ORDER BY COALESCE(is_done, false) ASC, start_datetime ASC`,
+       ORDER BY COALESCE(is_done, false) ASC, start_datetime ASC, id ASC`,
       [req.params.tripId]
     );
     res.json(result.rows);
@@ -364,8 +364,9 @@ app.delete('/api/items/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// API Import hàng loạt hoạt động từ file Excel (Hỗ trợ cả Lịch trình chi tiết v3 & Trip.com)
 app.post('/api/trips/:tripId/import', authMiddleware, async (req, res) => {
-  const { items } = req.body;
+  const { items, trip_notes } = req.body;
   const tripId = req.params.tripId;
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -376,33 +377,90 @@ app.post('/api/trips/:tripId/import', authMiddleware, async (req, res) => {
   try {
     await client.query('BEGIN');
     let importedCount = 0;
+    let updatedCount = 0;
 
     for (const item of items) {
-      await client.query(
-        `INSERT INTO itinerary_items 
-         (trip_id, item_type, title, provider_or_code, start_datetime, end_datetime, location_from, location_to, assigned_to, cost, status, is_done, details)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [
-          tripId,
-          item.item_type || 'activity',
-          item.title,
-          item.provider_or_code || '',
-          item.start_datetime,
-          item.end_datetime || null,
-          item.location_from || '',
-          item.location_to || '',
-          item.assigned_to || 'Cả đoàn',
-          Number(item.cost || 0),
-          item.status || 'Đã xác nhận',
-          Boolean(item.is_done),
-          item.details || {}
-        ]
+      // Kiểm tra xem hoạt động cùng tên và cùng thời điểm bắt đầu đã tồn tại trong chuyến đi chưa
+      const existing = await client.query(
+        `SELECT id, details FROM itinerary_items 
+         WHERE trip_id = $1 AND title = $2 AND start_datetime = $3
+         LIMIT 1`,
+        [tripId, item.title, item.start_datetime]
       );
-      importedCount++;
+
+      if (existing.rows.length > 0) {
+        const mergedDetails = {
+          ...(existing.rows[0].details || {}),
+          ...(item.details || {})
+        };
+        await client.query(
+          `UPDATE itinerary_items
+           SET item_type = $1,
+               provider_or_code = $2,
+               end_datetime = COALESCE($3, end_datetime),
+               location_from = $4,
+               location_to = $5,
+               assigned_to = $6,
+               cost = CASE WHEN $7 > 0 THEN $7 ELSE cost END,
+               status = $8,
+               details = $9
+           WHERE id = $10`,
+          [
+            item.item_type || 'activity',
+            item.provider_or_code || '',
+            item.end_datetime || null,
+            item.location_from || '',
+            item.location_to || '',
+            item.assigned_to || 'Cả đoàn',
+            Number(item.cost || 0),
+            item.status || 'Lên lịch',
+            mergedDetails,
+            existing.rows[0].id
+          ]
+        );
+        updatedCount++;
+      } else {
+        await client.query(
+          `INSERT INTO itinerary_items 
+           (trip_id, item_type, title, provider_or_code, start_datetime, end_datetime, location_from, location_to, assigned_to, cost, status, is_done, details)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
+          [
+            tripId,
+            item.item_type || 'activity',
+            item.title,
+            item.provider_or_code || '',
+            item.start_datetime,
+            item.end_datetime || null,
+            item.location_from || '',
+            item.location_to || '',
+            item.assigned_to || 'Cả đoàn',
+            Number(item.cost || 0),
+            item.status || 'Lên lịch',
+            Boolean(item.is_done),
+            item.details || {}
+          ]
+        );
+        importedCount++;
+      }
+    }
+
+    // Nếu file Excel có kèm sheet "Lưu ý & đặt vé", tự động cập nhật vào ghi chú chuyến đi
+    if (trip_notes && String(trip_notes).trim()) {
+      const cleanNotes = String(trip_notes).trim();
+      const tripRes = await client.query('SELECT notes FROM trips WHERE id = $1', [tripId]);
+      if (tripRes.rows.length > 0) {
+        const currentNotes = (tripRes.rows[0].notes || '').trim();
+        if (!currentNotes.includes(cleanNotes)) {
+          const nextNotes = currentNotes
+            ? `${currentNotes}\n\n${cleanNotes}`
+            : cleanNotes;
+          await client.query('UPDATE trips SET notes = $1 WHERE id = $2', [nextNotes, tripId]);
+        }
+      }
     }
 
     await client.query('COMMIT');
-    res.status(201).json({ success: true, importedCount });
+    res.status(201).json({ success: true, importedCount, updatedCount });
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ error: err.message });
