@@ -518,7 +518,35 @@
             </div>
           </div>
         </div>
-
+<!-- KHỐI THÔNG TIN CHI TIẾT CÁCH ĐI & LƯU Ý (ẨN TRONG NÚT XEM CHI TIẾT) -->
+        <div class="p-3.5 bg-sky-500/5 rounded-xl border border-sky-500/25 space-y-3">
+          <div class="text-xs font-semibold text-sky-300 flex items-center gap-1.5">
+            <i data-lucide="Compass" class="w-4 h-4"></i>
+            <span>Chi tiết Cách đi, Giờ mở cửa & Lưu ý (Hiển thị khi bấm "Xem chi tiết")</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Phương tiện</label>
+              <input id="d_transport" placeholder="VD: Metro / DiDi / Đi bộ" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Thời gian di chuyển</label>
+              <input id="d_travel_time" placeholder="VD: ~30 phút" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Giờ mở cửa</label>
+              <input id="d_open_hours" placeholder="VD: 07:00 – 20:00" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Cách đi chi tiết từ điểm trước</label>
+            <textarea id="d_directions" rows="2" placeholder="VD: Đi bộ ~8 phút đến ga Đông Môn Đại Kiều (Line 2) -> đổi Line 8..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Ghi chú / Lưu ý phụ</label>
+            <textarea id="d_extra_note" rows="2" placeholder="VD: Gọi thêm sủi cảo dầu ớt. Giờ cao điểm hay xếp hàng..." class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs"></textarea>
+          </div>
+        </div>
         <div id="dynamicFields" class="grid grid-cols-2 gap-3 p-3 bg-slate-950/70 rounded-xl border border-slate-800"></div>
 
         <div class="grid grid-cols-3 gap-3">
@@ -718,6 +746,7 @@
     let selectedDateFilter = 'all';
     let packingSubFilter = 'all';
     let parsedImportRows = [];
+    let extractedTripNotes = '';
     let customPhrases = [];
     let currentPhraseCategory = 'all';
     let toastTimer = null;
@@ -1855,21 +1884,177 @@
 
       return parsedList;
     }
+// BỘ ĐỌC ĐỊNH DẠNG FILE EXCEL LỊCH TRÌNH CHI TIẾT MỚI (VD: lich_trinh_thanh_do_v3.xlsx)
+    function parseDetailedScheduleWorkbook(workbook, defaultTripDate) {
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rawMatrix = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false, defval: '' });
+
+      // Tìm năm trong dòng tiêu đề đầu tiên (VD: "23–25/11/2026") hoặc lấy năm của chuyến đi
+      let detectedYear = (defaultTripDate || '2026-11-23').slice(0, 4);
+      for (let i = 0; i < Math.min(4, rawMatrix.length); i++) {
+        const rowStr = rawMatrix[i].join(' ');
+        const ym = rowStr.match(/\b(20\d{2})\b/);
+        if (ym) {
+          detectedYear = ym[1];
+          break;
+        }
+      }
+
+      // Tìm dòng Header chứa cột "Ngày", "Giờ", "Hoạt động", "Địa điểm"
+      let headerRowIdx = -1;
+      for (let i = 0; i < Math.min(10, rawMatrix.length); i++) {
+        const rowNormalized = rawMatrix[i].map(c => String(c || '').trim().toLowerCase());
+        if (rowNormalized.includes('ngày') && rowNormalized.includes('giờ') && rowNormalized.includes('địa điểm')) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+      if (headerRowIdx === -1) return null; // Không phải định dạng Lịch trình chi tiết
+
+      const headers = rawMatrix[headerRowIdx].map(h => String(h || '').trim());
+      const colIdx = (name) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+
+      const idxDay = colIdx('ngày');
+      const idxTime = colIdx('giờ');
+      const idxAct = colIdx('hoạt động');
+      const idxPlace = colIdx('địa điểm');
+      const idxZhName = colIdx('tên tiếng trung');
+      const idxZhAddr = colIdx('địa chỉ tiếng trung');
+      const idxOpen = headers.findIndex(h => h.toLowerCase().includes('giờ mở cửa'));
+      const idxDir = colIdx('cách đi');
+      const idxTrans = colIdx('phương tiện');
+      const idxDur = colIdx('thời gian di chuyển');
+      const idxNote = colIdx('ghi chú');
+
+      const parsedList = [];
+      let currentDatePart = defaultTripDate || `${detectedYear}-11-23`;
+
+      for (let r = headerRowIdx + 1; r < rawMatrix.length; r++) {
+        const row = rawMatrix[r];
+        if (!row || row.every(cell => !String(cell || '').trim())) continue;
+
+        const rawDay = idxDay >= 0 ? String(row[idxDay] || '').trim() : '';
+        const rawTime = idxTime >= 0 ? String(row[idxTime] || '').trim() : '';
+        const act = idxAct >= 0 ? String(row[idxAct] || '').trim() : '';
+        const place = idxPlace >= 0 ? String(row[idxPlace] || '').trim() : '';
+
+        if (!place && !act) continue;
+
+        // Bóc tách Ngày (VD: "T2 23/11" -> "2026-11-23")
+        const dm = rawDay.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](20\d{2}))?/);
+        if (dm) {
+          const dd = dm[1].padStart(2, '0');
+          const mm = dm[2].padStart(2, '0');
+          const yy = dm[3] || detectedYear;
+          currentDatePart = `${yy}-${mm}-${dd}`;
+        }
+
+        // Bóc tách Giờ (VD: "07:45" hoặc "7:45")
+        let timePart = '08:00';
+        const tm = rawTime.match(/(\d{1,2}):(\d{2})/);
+        if (tm) {
+          timePart = `${tm[1].padStart(2, '0')}:${tm[2]}`;
+        }
+
+        const cleanVal = (idx) => {
+          if (idx < 0) return '';
+          const v = String(row[idx] || '').trim();
+          return (v === '—' || v === '-' || v.toLowerCase() === 'nan') ? '' : v;
+        };
+
+        const zhName = cleanVal(idxZhName);
+        const zhAddr = cleanVal(idxZhAddr);
+        const openHours = cleanVal(idxOpen);
+        const directions = cleanVal(idxDir);
+        const transport = cleanVal(idxTrans);
+        const travelTime = cleanVal(idxDur);
+        const note = cleanVal(idxNote);
+
+        // Phân loại icon tự động theo cột "Hoạt động"
+        const actLower = act.toLowerCase();
+        let item_type = 'activity';
+        if (actLower.includes('bay')) item_type = 'flight';
+        else if (actLower.includes('nhận phòng') || actLower.includes('khách sạn')) item_type = 'hotel';
+        else if (actLower.includes('tàu') || actLower.includes('xe')) item_type = 'train';
+        else if (actLower.includes('tham quan') || actLower.includes('bảo tàng')) item_type = 'ticket';
+
+        const details = enrichChineseInfo(`${place} ${zhName}`);
+        if (zhName) details.d_chinese_name = zhName;
+        if (zhAddr) details.d_chinese_address = zhAddr;
+        if (openHours) details.d_open_hours = openHours;
+        if (directions) details.d_directions = directions;
+        if (transport) details.d_transport = transport;
+        if (travelTime) details.d_travel_time = travelTime;
+        if (note) details.d_note = note;
+
+        const codeSummary = transport
+          ? `${transport}${travelTime ? ' • ' + travelTime : ''}`
+          : (act || 'Lịch trình');
+
+        parsedList.push({
+          selected: true,
+          item_type,
+          title: act && place ? `${act}: ${place}` : (place || act),
+          provider_or_code: codeSummary,
+          start_datetime: `${currentDatePart}T${timePart}`,
+          end_datetime: '',
+          location_from: place,
+          location_to: zhName || '',
+          assigned_to: 'Cả đoàn',
+          cost: 0,
+          status: 'Lên lịch',
+          is_done: false,
+          timeNote: directions ? `🧭 ${directions.slice(0, 65)}${directions.length > 65 ? '...' : ''}` : '',
+          details
+        });
+      }
+
+      // Đọc luôn Sheet 2 ("Lưu ý & đặt vé") nếu có trong file
+      let sheetNotes = '';
+      if (workbook.SheetNames.length > 1) {
+        const secondSheet = workbook.Sheets[workbook.SheetNames[1]];
+        const noteRows = XLSX.utils.sheet_to_json(secondSheet, { defval: '' });
+        const lines = [];
+        noteRows.forEach(nr => {
+          const vals = Object.values(nr).map(v => String(v || '').trim()).filter(Boolean);
+          if (vals.length >= 2) lines.push(`• [${vals[0]}] ${vals.slice(1).join(' - ')}`);
+          else if (vals.length === 1) lines.push(`• ${vals[0]}`);
+        });
+        if (lines.length > 0) {
+          sheetNotes = `📋 LƯU Ý & ĐẶT VÉ (${workbook.SheetNames[1]}):\n` + lines.join('\n');
+        }
+      }
+
+      return { items: parsedList, tripNotes: sheetNotes };
+    }
 
     function handleExcelUpload(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const activeTrip = trips.find(t => t.id === currentTripId);
-      const defaultDate = activeTrip ? String(activeTrip.start_date).slice(0, 10) : '2026-11-19';
+      const defaultDate = activeTrip ? String(activeTrip.start_date).slice(0, 10) : '2026-11-23';
 
       const reader = new FileReader();
       reader.onload = function(evt) {
         const data = new Uint8Array(evt.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
+
+        // 1. Thử nhận diện định dạng file Lịch trình chi tiết v3 trước
+        const detailedResult = parseDetailedScheduleWorkbook(workbook, defaultDate);
+        if (detailedResult && detailedResult.items.length > 0) {
+          parsedImportRows = detailedResult.items;
+          extractedTripNotes = detailedResult.tripNotes || '';
+          renderImportPreview();
+          document.getElementById('importPreviewModal').classList.remove('hidden');
+          document.getElementById('importPreviewModal').classList.add('flex');
+          return;
+        }
+
+        // 2. Nếu không phải, tự động dùng bộ đọc đơn đặt chỗ Trip.com như cũ
+        extractedTripNotes = '';
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
-
         if (rows.length === 0) return alert('File Excel không có dữ liệu!');
 
         parsedImportRows = parseTripComSheetRows(rows, defaultDate);
@@ -1974,11 +2159,15 @@
 
       const res = await apiFetch(`/api/trips/${currentTripId}/import`, {
         method: 'POST',
-        body: JSON.stringify({ items: selectedItems })
+        body: JSON.stringify({
+          items: selectedItems,
+          trip_notes: extractedTripNotes
+        })
       });
       const data = await res.json();
       if (res.ok) {
         closeImportModal();
+        showCopyToast(`Đã nhập ${data.importedCount || 0} mục mới${data.updatedCount ? ` & cập nhật ${data.updatedCount} mục` : ''}!`);
         loadTrips();
       } else {
         alert(data.error || 'Lỗi khi nhập dữ liệu');
@@ -2386,6 +2575,20 @@
       lucide.createIcons();
     }
 
+    function toggleItemDetails(itemId) {
+      const panel = document.getElementById(`itemDetails_${itemId}`);
+      const btnText = document.getElementById(`itemDetailsBtnText_${itemId}`);
+      if (!panel) return;
+      const isHidden = panel.classList.contains('hidden');
+      if (isHidden) {
+        panel.classList.remove('hidden');
+        if (btnText) btnText.innerText = 'Thu gọn chi tiết';
+      } else {
+        panel.classList.add('hidden');
+        if (btnText) btnText.innerText = 'Xem chi tiết & Cách đi';
+      }
+    }
+
     function renderCard(item) {
       const cfg = typeConfig[item.item_type] || typeConfig.activity;
       const startTime = extractTimeHHMM(item.start_datetime);
@@ -2398,6 +2601,11 @@
       const zhName = d.d_chinese_name || '';
       const zhAddr = d.d_chinese_address || '';
       const viAddr = d.d_address || '';
+      const directions = d.d_directions || '';
+      const transport = d.d_transport || '';
+      const travelTime = d.d_travel_time || '';
+      const openHours = d.d_open_hours || '';
+      const noteText = d.d_note || '';
 
       let hotelStayBanner = '';
       if (isHotel) {
@@ -2427,12 +2635,15 @@
         `;
       }
 
+      const hiddenDetailKeys = ['d_chinese_name', 'd_chinese_address', 'd_address', 'd_nights', 'd_directions', 'd_transport', 'd_travel_time', 'd_open_hours', 'd_note'];
       const otherBadges = Object.entries(d)
-        .filter(([k, v]) => v && !['d_chinese_name', 'd_chinese_address', 'd_address', 'd_nights'].includes(k))
+        .filter(([k, v]) => v && !hiddenDetailKeys.includes(k))
         .map(([_, v]) => `<span class="px-2.5 py-1 rounded-md bg-slate-800/90 text-slate-300 text-xs">${v}</span>`)
         .join('');
 
-      const safeTitle = (item.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const hasExpandableDetails = Boolean(directions || transport || travelTime || openHours || noteText || viAddr || zhName || zhAddr || otherBadges);
+
+      const safeTitle = (item.title || '').replace(/'/g, "\\'").replace(/"/g, '"');
       const safeZhName = zhName.replace(/'/g, "\\'");
       const safeZhAddr = zhAddr.replace(/'/g, "\\'");
 
@@ -2441,7 +2652,7 @@
         : (isDone ? 'Đã xong' : 'Đánh dấu Xong');
 
       return `
-        <div class="glass rounded-2xl p-5 transition flex flex-col md:flex-row md:items-center justify-between gap-4 ${isDone ? 'opacity-40 bg-slate-950/40 border-slate-800/40' : 'hover:border-slate-700'}">
+        <div class="glass rounded-2xl p-5 transition flex flex-col md:flex-row md:items-start justify-between gap-4 ${isDone ? 'opacity-40 bg-slate-950/40 border-slate-800/40' : 'hover:border-slate-700'}">
           <div class="flex items-start gap-4 flex-1">
             <div class="text-center min-w-[68px] pt-1">
               ${isEsim ? `
@@ -2455,6 +2666,7 @@
               `}
             </div>
             <div class="space-y-1.5 flex-1">
+              <!-- HÀNG BADGE CƠ BẢN -->
               <div class="flex flex-wrap items-center gap-2">
                 <span class="px-2.5 py-0.5 rounded-full text-xs font-medium border flex items-center gap-1.5 ${cfg.badge}">
                   <i data-lucide="${cfg.icon}" class="w-3.5 h-3.5"></i> ${cfg.label}
@@ -2465,49 +2677,84 @@
                 <span class="text-xs px-2 py-0.5 rounded ${isDone ? 'bg-slate-800 text-slate-400' : 'bg-emerald-500/15 text-emerald-400 font-medium'}">
                   ${isDone ? (isEsim ? '✓ eSIM Đã dùng' : '✓ Đã hoàn thành') : item.status}
                 </span>
+                <span class="px-2 py-0.5 rounded bg-slate-900 text-slate-400 text-xs">👤 ${item.assigned_to}</span>
               </div>
 
+              <!-- TIÊU ĐỀ & ĐỊA ĐIỂM CƠ BẢN -->
               <h4 class="text-base font-bold ${isDone ? 'line-through text-slate-400' : 'text-white'}">${item.title}</h4>
 
               ${hotelStayBanner}
 
-              <p class="text-sm text-slate-300 flex flex-wrap items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2 text-sm text-slate-300">
                 <span>${item.location_from || ''}</span>
-                ${item.location_to ? `<i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span>${item.location_to}</span>` : ''}
-              </p>
+                ${item.location_to ? `<i data-lucide="arrow-right" class="w-4 h-4 text-slate-500"></i> <span class="text-amber-300 font-medium">${item.location_to}</span>` : ''}
+                ${hasExpandableDetails ? `
+                  <button onclick="toggleItemDetails(${item.id})" class="ml-auto px-3 py-1 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 text-xs font-semibold flex items-center gap-1.5 transition">
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
+                    <span id="itemDetailsBtnText_${item.id}">Xem chi tiết & Cách đi</span>
+                  </button>
+                ` : ''}
+              </div>
 
-              ${(viAddr || zhName || zhAddr) ? `
-                <div class="mt-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
-                  ${viAddr ? `<div class="text-xs text-slate-200 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i> <span><strong>Địa chỉ:</strong> ${viAddr}</span></div>` : ''}
-                  ${zhName ? `<div class="text-sm font-bold text-amber-300">🇨🇳 ${zhName}</div>` : ''}
-                  ${zhAddr ? `<div class="text-xs text-amber-200/90">📍 地址: ${zhAddr}</div>` : ''}
-                  ${(zhName || zhAddr) ? `
-                    <div class="flex flex-wrap items-center gap-2 pt-1">
-                      ${zhName ? `
-                        <button onclick="copyToClipboard('${safeZhName}', 'Tên Tiếng Trung')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1 transition shadow">
-                          <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Tên Trung (Tìm Map)
-                        </button>
-                      ` : ''}
-                      ${zhAddr ? `
-                        <button onclick="copyToClipboard('${safeZhAddr}', 'Địa chỉ Tiếng Trung')" class="px-2.5 py-1 rounded-lg bg-sky-600/30 border border-sky-500/40 hover:bg-sky-600 text-sky-200 hover:text-white font-medium text-xs flex items-center gap-1 transition">
-                          <i data-lucide="map-pinned" class="w-3.5 h-3.5"></i> Copy Địa chỉ Trung
-                        </button>
-                      ` : ''}
-                      <button onclick="showBigChinese('${safeTitle}', '${safeZhName || safeZhAddr}', '${safeZhAddr}')" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition">
-                        <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> Phóng to cho Tài xế
-                      </button>
-                      <button onclick="speakChinese('${safeZhName} ${safeZhAddr}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-medium flex items-center gap-1 transition">
-                        <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Đọc Loa
-                      </button>
+              <!-- KHUNG CHI TIẾT ẨN/HIỆN KHI BẤM NÚT "XEM CHI TIẾT" -->
+              ${hasExpandableDetails ? `
+                <div id="itemDetails_${item.id}" class="hidden mt-3 p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-2.5 text-xs">
+                  ${(transport || travelTime) ? `
+                    <div class="flex flex-wrap items-center gap-3 text-sky-300 font-medium">
+                      ${transport ? `<span class="px-2.5 py-1 rounded-lg bg-sky-500/15 border border-sky-500/30">🚇 Phương tiện: <strong>${transport}</strong></span>` : ''}
+                      ${travelTime ? `<span class="px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300">⏱️ Thời gian di chuyển: <strong>${travelTime}</strong></span>` : ''}
                     </div>
                   ` : ''}
+
+                  ${directions ? `
+                    <div class="p-2.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-slate-200 leading-relaxed">
+                      <strong class="text-sky-300">🧭 Cách đi từ điểm trước:</strong> ${directions}
+                    </div>
+                  ` : ''}
+
+                  ${openHours ? `
+                    <div class="text-slate-300">
+                      <strong class="text-emerald-400">⏰ Giờ mở cửa:</strong> ${openHours}
+                    </div>
+                  ` : ''}
+
+                  ${noteText ? `
+                    <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200 leading-relaxed">
+                      <strong class="text-amber-400">💡 Lưu ý / Ghi chú:</strong> ${noteText}
+                    </div>
+                  ` : ''}
+
+                  ${(viAddr || zhName || zhAddr) ? `
+                    <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                      ${viAddr ? `<div class="text-xs text-slate-200 flex items-start gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5"></i> <span><strong>Địa chỉ:</strong> ${viAddr}</span></div>` : ''}
+                      ${zhName ? `<div class="text-sm font-bold text-amber-300">🇨🇳 ${zhName}</div>` : ''}
+                      ${zhAddr ? `<div class="text-xs text-amber-200/90">📍 地址: ${zhAddr}</div>` : ''}
+                      ${(zhName || zhAddr) ? `
+                        <div class="flex flex-wrap items-center gap-2 pt-1">
+                          ${zhName ? `
+                            <button onclick="copyToClipboard('${safeZhName}', 'Tên Tiếng Trung')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs flex items-center gap-1 transition shadow">
+                              <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Tên Trung (Tìm Map)
+                            </button>
+                          ` : ''}
+                          ${zhAddr ? `
+                            <button onclick="copyToClipboard('${safeZhAddr}', 'Địa chỉ Tiếng Trung')" class="px-2.5 py-1 rounded-lg bg-sky-600/30 border border-sky-500/40 hover:bg-sky-600 text-sky-200 hover:text-white font-medium text-xs flex items-center gap-1 transition">
+                              <i data-lucide="map-pinned" class="w-3.5 h-3.5"></i> Copy Địa chỉ Trung
+                            </button>
+                          ` : ''}
+                          <button onclick="showBigChinese('${safeTitle}', '${safeZhName || safeZhAddr}', '${safeZhAddr}')" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition">
+                            <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> Phóng to cho Tài xế
+                          </button>
+                          <button onclick="speakChinese('${safeZhName} ${safeZhAddr}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-medium flex items-center gap-1 transition">
+                            <i data-lucide="volume-2" class="w-3.5 h-3.5"></i> Đọc Loa
+                          </button>
+                        </div>
+                      ` : ''}
+                    </div>
+                  ` : ''}
+
+                  ${otherBadges ? `<div class="flex flex-wrap gap-2 pt-1">${otherBadges}</div>` : ''}
                 </div>
               ` : ''}
-
-              <div class="flex flex-wrap gap-2 pt-1">
-                ${otherBadges}
-                <span class="px-2.5 py-1 rounded-md bg-slate-900 text-slate-400 text-xs">👤 ${item.assigned_to}</span>
-              </div>
             </div>
           </div>
 
@@ -2578,6 +2825,11 @@
       document.getElementById('d_address').value = existingDetails.d_address || '';
       document.getElementById('d_chinese_name').value = existingDetails.d_chinese_name || '';
       document.getElementById('d_chinese_address').value = existingDetails.d_chinese_address || '';
+      document.getElementById('d_transport').value = existingDetails.d_transport || '';
+      document.getElementById('d_travel_time').value = existingDetails.d_travel_time || '';
+      document.getElementById('d_open_hours').value = existingDetails.d_open_hours || '';
+      document.getElementById('d_directions').value = existingDetails.d_directions || '';
+      document.getElementById('d_extra_note').value = existingDetails.d_note || '';
 
       if (type === 'hotel') {
         lblStart.innerText = '🔑 Ngày giờ Nhận phòng (Check-in)';
@@ -2689,13 +2941,24 @@
       const addr = document.getElementById('d_address').value.trim();
       const zhName = document.getElementById('d_chinese_name').value.trim();
       const zhAddr = document.getElementById('d_chinese_address').value.trim();
+      const transport = document.getElementById('d_transport').value.trim();
+      const travelTime = document.getElementById('d_travel_time').value.trim();
+      const openHours = document.getElementById('d_open_hours').value.trim();
+      const directions = document.getElementById('d_directions').value.trim();
+      const extraNote = document.getElementById('d_extra_note').value.trim();
+
       if (addr) details.d_address = addr;
       if (zhName) details.d_chinese_name = zhName;
       if (zhAddr) details.d_chinese_address = zhAddr;
+      if (transport) details.d_transport = transport;
+      if (travelTime) details.d_travel_time = travelTime;
+      if (openHours) details.d_open_hours = openHours;
+      if (directions) details.d_directions = directions;
 
       document.querySelectorAll('#dynamicFields input').forEach(inp => {
         if (inp.value) details[inp.id] = inp.value;
       });
+      if (extraNote) details.d_note = extraNote;
 
       const fileInput = document.getElementById('f_qr');
       let qr_image = null;
